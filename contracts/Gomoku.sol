@@ -44,5 +44,18 @@ contract Gomoku {
             lastMove = move;
         }
     }
+
+    struct GameState {
+        uint32 nMoves;
+        uint8[19][19] board;
+    }
+
+    GameState gameState;
+
+    function placePiece(MoveCode memory _moveCode, uint8 _player) private {
+        require(gameState.board[_moveCode.x][_moveCode.y] == 0);
+        gameState.board[_moveCode.x][_moveCode.y] = _player;
+        gameState.nMoves++;
+    } 
 }
 
