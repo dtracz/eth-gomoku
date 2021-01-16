@@ -99,9 +99,8 @@ contract Gomoku {
     string player0Name;
     string player1Name;
     address nextPlayer;
-    address winner;
-    bool ended;
-    uint pot; // What this game is worth: ether paid into the game
+    address playerWhite; // First player will be white
+    uint coins; // What this game is worth: ether paid into the game
 
     GomokuBackend game;
     Move lastMove;
@@ -109,8 +108,8 @@ contract Gomoku {
 
     mapping(address => int8) private players;
 
-    event GameInitialized(address indexed player0, string player1Alias, address playerWhite, uint pot);
-    event GameJoined(address indexed player0, string player0Name, address indexed player1, string player1Name, address playerWhite, uint pot);
+    event GameInitialized(address indexed player0, string player1Alias, address playerWhite, uint coins);
+    event GameJoined(address indexed player0, string player0Name, address indexed player1, string player1Name, address playerWhite, uint coins);
     event GameStateChanged(int8[128] state);
     //event Move(address indexed player, uint256 fromIndex, uint256 toIndex);
 
@@ -157,66 +156,43 @@ contract Gomoku {
         // ...
     }
 
-    /**
-     * Initialize a new game
-     * string player1Alias: Alias of the player creating the game
-     * bool playAsWhite: Pass true or false depending on if the creator will play as white
-     */
-    function initGame(string player0Name, bool playAsWhite) public {
-
-        ended = false;
-
-        // Initialize participants
+    function initGame(string memory _player0Name) public {
         player0 = msg.sender;
-        player0Name = player0Name;
+        player0Name = _player0Name;
 
-        // Initialize game value
-        pot = msg.value * 2;
+        //coins = msg.value * 2;
 
         //state = defaultState;
 
-        if (playAsWhite) {
-            // Player 1 will play as white
-            playerWhite = msg.sender;
+        playerWhite = msg.sender;
 
-            // Game starts with White, so here player 1
-            nextPlayer = player0;
-        }
+        nextPlayer = player0;
 
-        // Sent notification events
-        GameInitialized(player0, player0Name, playerWhite, pot);
-        GameStateChanged(fields);
+        emit GameInitialized(player0, player0Name, playerWhite, coins);
+        //GameStateChanged
     }
 
-    /**
-     * Join an initialized game
-     * bytes32 gameId: ID of the game to join
-     * string player2Alias: Alias of the player that is joining
-     */
-    function joinGame(string player1Name) public {
+
+    function joinGame(string memory _player1Name) public {
         // Check that this game does not have a second player yet
-        if (player1 != 0) {
-            throw;
-        }
+//        if (player1 != 0) {
+//            throw;
+//        }
 
         // throw if the second player did not match the bet.
-        if (msg.value != pot) {
-            throw;
-        }
-        pot += msg.value;
+//        if (msg.value != coins) {
+//            throw;
+//        }
+        //coins += msg.value;
 
         player1 = msg.sender;
-        player1Name = player1Name;
+        player1Name = _player1Name;
 
 
-        // If the other player isn't white, player1 will play as white
-        if (playerWhite == 0) {
-            playerWhite = msg.sender;
-            // Game starts with White, so here player1
-            nextPlayer = player1;
-        }
+        playerWhite = msg.sender;
+        nextPlayer = player0;
 
-        GameJoined(player0, player0Name, player1, player1Name, playerWhite, pot);
+        emit GameJoined(player0, player0Name, player1, player1Name, playerWhite, coins);
     }
 }
 

@@ -88,12 +88,11 @@ App = {
     }
   }
 
+  initGame: () => {
 
-  // Event listeners
-  App.contracts.Gomoku.GameInitialized({}, games.eventGameInitialized)
-  Gomoku.GameJoined({}, games.eventGameJoined)
-  Gomoku.GameStateChanged({}, games.eventGameStateChanged)
-  //Gomoku.Move({}, games.eventMove);
+  }
+
+
 }
 
 $(() => {
