@@ -7,11 +7,6 @@ contract Gomoku {
 
     Move lastMove;
 
-    constructor(address _player0, address _player1) public {
-        player0 = _player0;
-        player1 = _player1;
-    }
-
     modifier playerOnly(uint32 _n) {
         if (_n % 2 == 0)
             require(msg.sender == player0);
