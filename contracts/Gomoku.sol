@@ -29,13 +29,13 @@ contract GomokuBackend {
         while (i < _str.length - 2 && (uint8(_str[i]) >= 48 || uint8(_str[i]) <= 57)) {
             uint8 d = uint8(_str[i]) - 48; //uint8('0');
             _code.x = 10*_code.x + d;
-        } 
+        }
         require(_str[i] == ',');
         i++;
         while (i < _str.length - 1 && (uint8(_str[i]) >= 48 || uint8(_str[i]) <= 57)) {
             uint8 d = uint8(_str[i]) - 48; //uint8('0');
             _code.y = 10*_code.y + d;
-        } 
+        }
         require(_str[i] == ')');
         i++;
         require(i == _str.length);
@@ -62,7 +62,7 @@ contract GomokuBackend {
         if (checkWin(_code, _player))
             winning = _player;
         return _player;
-    } 
+    }
 
     function checkWin(MoveCode memory _code, int8 _player)
         private
@@ -96,12 +96,23 @@ contract GomokuBackend {
 contract Gomoku {
     address player0;
     address player1;
+    string player0Name;
+    string player1Name;
+    address nextPlayer;
+    address winner;
+    bool ended;
+    uint pot; // What this game is worth: ether paid into the game
 
     GomokuBackend game;
     Move lastMove;
     int8 lastPlayer;
 
     mapping(address => int8) private players;
+
+    event GameInitialized(address indexed player0, string player1Alias, address playerWhite, uint pot);
+    event GameJoined(address indexed player0, string player0Name, address indexed player1, string player1Name, address playerWhite, uint pot);
+    event GameStateChanged(int8[128] state);
+    //event Move(address indexed player, uint256 fromIndex, uint256 toIndex);
 
     modifier playerOnly(uint32 _n) {
         if (_n % 2 == 0)
@@ -114,7 +125,7 @@ contract Gomoku {
     modifier moveCorrect(string memory _code, int8 _player) {
         require(game.isCorrect(bytes(_code), _player));
         _;
-    } 
+    }
 
     struct Move {
         address gameAddress;
@@ -144,6 +155,68 @@ contract Gomoku {
         private
     {
         // ...
+    }
+
+    /**
+     * Initialize a new game
+     * string player1Alias: Alias of the player creating the game
+     * bool playAsWhite: Pass true or false depending on if the creator will play as white
+     */
+    function initGame(string player0Name, bool playAsWhite) public {
+
+        ended = false;
+
+        // Initialize participants
+        player0 = msg.sender;
+        player0Name = player0Name;
+
+        // Initialize game value
+        pot = msg.value * 2;
+
+        //state = defaultState;
+
+        if (playAsWhite) {
+            // Player 1 will play as white
+            playerWhite = msg.sender;
+
+            // Game starts with White, so here player 1
+            nextPlayer = player0;
+        }
+
+        // Sent notification events
+        GameInitialized(player0, player0Name, playerWhite, pot);
+        GameStateChanged(fields);
+    }
+
+    /**
+     * Join an initialized game
+     * bytes32 gameId: ID of the game to join
+     * string player2Alias: Alias of the player that is joining
+     */
+    function joinGame(string player1Name) public {
+        // Check that this game does not have a second player yet
+        if (player1 != 0) {
+            throw;
+        }
+
+        // throw if the second player did not match the bet.
+        if (msg.value != pot) {
+            throw;
+        }
+        pot += msg.value;
+
+        player1 = msg.sender;
+        player1Name = player1Name;
+
+
+        // If the other player isn't white, player1 will play as white
+        if (playerWhite == 0) {
+            playerWhite = msg.sender;
+            // Game starts with White, so here player1
+            nextPlayer = player1;
+        }
+
+        GameJoined(player0, player0Name, player1, player1Name, playerWhite, pot);
     }
 }
 
