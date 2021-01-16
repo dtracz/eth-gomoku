@@ -16,25 +16,27 @@ contract GomokuBackend {
     GameState gameState;
     int8 winning;
 
-    modifier isMoveCorrect(MoveCode memory _moveCode, int8 _player) {
-        require(gameState.board[_moveCode.x][_moveCode.y] == 0);
-        require(winning == 0);
-        _;
+    function isCorrect(MoveCode memory _code, int8 _player)
+        public
+        view
+        returns(bool)
+    {
+        return (gameState.board[_code.x][_code.y] == 0
+            && winning == 0);
     }
 
-    function placePiece(MoveCode memory _moveCode, int8 _player)
-        internal
-        isMoveCorrect(_moveCode, _player)
+    function move(MoveCode memory _code, int8 _player)
+        public
         returns(int8)
     {
-        gameState.board[_moveCode.x][_moveCode.y] = _player;
+        gameState.board[_code.x][_code.y] = _player;
         gameState.nMoves++;
-        if (checkWin(_moveCode, _player))
+        if (checkWin(_code, _player))
             winning = _player;
         return _player;
     } 
 
-    function checkWin(MoveCode memory _moveCode, int8 _player)
+    function checkWin(MoveCode memory _code, int8 _player)
         private
         view
         returns(bool)
@@ -44,8 +46,8 @@ contract GomokuBackend {
             for (int8 j = -1; j <= 1; j++) {
                 if (i == 0 && j == 0)
                     continue;
-                int8 x = int8(_moveCode.x) + i;
-                int8 y = int8(_moveCode.y) + j;
+                int8 x = int8(_code.x) + i;
+                int8 y = int8(_code.y) + j;
                 while (0 <= x && x < 19 &&
                        0 <= y && y < 19 &&
                        gameState.board[uint(x)][uint(y)] == _player) {
@@ -67,8 +69,11 @@ contract Gomoku {
     address player0;
     address player1;
 
-    GomokuBackend backend;
+    GomokuBackend game;
     Move lastMove;
+    int8 lastPlayer;
+
+    mapping(address => int8) private players;
 
     modifier playerOnly(uint32 _n) {
         if (_n % 2 == 0)
@@ -78,24 +83,39 @@ contract Gomoku {
         _;
     }
 
+    modifier moveCorrect(GomokuBackend.MoveCode memory _code, int8 _player) {
+        require(game.isCorrect(_code, _player));
+        _;
+    } 
+
     struct Move {
         address gameAddress;
         uint32 mvIdx;
-        GomokuBackend.MoveCode moveCode;
+        GomokuBackend.MoveCode code;
         bytes32 hashPrev;
         bytes32 hashGameState;
     }
 
-    function hashMove(Move memory move) pure private returns (bytes32) {
-        // ???
-        return move.hashPrev;
+    function play(Move memory _move, bytes32 _signature)
+        public
+        playerOnly(_move.mvIdx)
+        moveCorrect(_move.code, players[msg.sender])
+    {
+        bytes32 _lastHash = keccak256(abi.encode(lastMove));
+        require(_lastHash == _move.hashPrev);
+        int8 _winner = game.move(lastMove.code, lastPlayer);
+        if (_winner != 0) {
+            pay(_winner);
+        } else {
+            lastMove = _move;
+            lastPlayer = players[msg.sender];
+        }
     }
 
-    function play(Move memory move, bytes32 _signature) public playerOnly(move.mvIdx) {
-        bytes32 lastHash = hashMove(lastMove);
-        if (lastHash == move.hashPrev) {
-            lastMove = move;
-        }
+    function pay(int8 player)
+        private
+    {
+        // ...
     }
 }
 
