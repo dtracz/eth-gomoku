@@ -47,15 +47,43 @@ contract Gomoku {
 
     struct GameState {
         uint32 nMoves;
-        uint8[19][19] board;
+        int8[19][19] board;
     }
 
     GameState gameState;
+    int8 winning;
 
-    function placePiece(MoveCode memory _moveCode, uint8 _player) private {
+    function placePiece(MoveCode memory _moveCode, int8 _player) private {
         require(gameState.board[_moveCode.x][_moveCode.y] == 0);
+        require(winning == 0);
         gameState.board[_moveCode.x][_moveCode.y] = _player;
         gameState.nMoves++;
+        if (checkWin(_moveCode, _player))
+            winning = _player;
     } 
+
+    function checkWin(MoveCode memory _moveCode, int8 _player) private view returns(bool) {
+        uint8[3][3] memory _sameInDir;
+        for (int8 i = -1; i <= 1; i++) {
+            for (int8 j = -1; j <= 1; j++) {
+                if (i == 0 && j == 0)
+                    continue;
+                int8 x = int8(_moveCode.x) + i;
+                int8 y = int8(_moveCode.y) + j;
+                while (0 <= x && x < 19 &&
+                       0 <= y && y < 19 &&
+                       gameState.board[uint(x)][uint(y)] == _player) {
+                    _sameInDir[uint(x+1)][uint(y+1)]++;
+                    x += i;
+                    y += j;
+                }
+            }
+        }
+        return _sameInDir[1][0] + _sameInDir[1][2] == 5  // horizontal
+            || _sameInDir[0][1] + _sameInDir[2][1] == 5  // vertical
+            || _sameInDir[0][0] + _sameInDir[2][2] == 5  // SW-NE diag
+            || _sameInDir[2][0] + _sameInDir[0][2] == 5; // NW-SE diag
+    }
+
 }
 
