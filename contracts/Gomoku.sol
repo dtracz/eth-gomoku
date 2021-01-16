@@ -16,19 +16,47 @@ contract GomokuBackend {
     GameState gameState;
     int8 winning;
 
-    function isCorrect(MoveCode memory _code, int8 _player)
+    function decode(bytes memory _str)
+        private
+        pure
+        returns(MoveCode memory)
+    {
+        MoveCode memory _code;
+        uint8 i = 0;
+        require(_str.length < 256);
+        require(_str[i] == '(');
+        i++;
+        while (i < _str.length - 2 && (uint8(_str[i]) >= 48 || uint8(_str[i]) <= 57)) {
+            uint8 d = uint8(_str[i]) - 48; //uint8('0');
+            _code.x = 10*_code.x + d;
+        } 
+        require(_str[i] == ',');
+        i++;
+        while (i < _str.length - 1 && (uint8(_str[i]) >= 48 || uint8(_str[i]) <= 57)) {
+            uint8 d = uint8(_str[i]) - 48; //uint8('0');
+            _code.y = 10*_code.y + d;
+        } 
+        require(_str[i] == ')');
+        i++;
+        require(i == _str.length);
+        return _code;
+    }
+
+    function isCorrect(bytes memory _str, int8 _player)
         public
         view
         returns(bool)
     {
+        MoveCode memory _code = decode(_str);
         return (gameState.board[_code.x][_code.y] == 0
             && winning == 0);
     }
 
-    function move(MoveCode memory _code, int8 _player)
+    function move(bytes memory _str, int8 _player)
         public
         returns(int8)
     {
+        MoveCode memory _code = decode(_str);
         gameState.board[_code.x][_code.y] = _player;
         gameState.nMoves++;
         if (checkWin(_code, _player))
@@ -83,15 +111,15 @@ contract Gomoku {
         _;
     }
 
-    modifier moveCorrect(GomokuBackend.MoveCode memory _code, int8 _player) {
-        require(game.isCorrect(_code, _player));
+    modifier moveCorrect(string memory _code, int8 _player) {
+        require(game.isCorrect(bytes(_code), _player));
         _;
     } 
 
     struct Move {
         address gameAddress;
         uint32 mvIdx;
-        GomokuBackend.MoveCode code;
+        string code;
         bytes32 hashPrev;
         bytes32 hashGameState;
     }
@@ -103,7 +131,7 @@ contract Gomoku {
     {
         bytes32 _lastHash = keccak256(abi.encode(lastMove));
         require(_lastHash == _move.hashPrev);
-        int8 _winner = game.move(lastMove.code, lastPlayer);
+        int8 _winner = game.move(bytes(lastMove.code), lastPlayer);
         if (_winner != 0) {
             pay(_winner);
         } else {
