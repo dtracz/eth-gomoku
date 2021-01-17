@@ -94,6 +94,12 @@ App = {
     console.log("gamed initialized", App.gomoku.player0)
   },
 
+  joinGame: () => {
+    console.log('Trying to join game');
+    App.gomoku.joinGame("John");
+    console.log("gamed joined player0:", App.gomoku.player0, " player1:", App.gomoku.player1)
+  },
+
 
 }
 
@@ -104,5 +110,7 @@ $(() => {
   $('#init-button').click(() => {
     App.initGame();
   });
-
+  $('#join-button').click(() => {
+    App.joinGame();
+  });
 })

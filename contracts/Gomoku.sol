@@ -120,8 +120,6 @@ contract GomokuBackend {
 
 contract Gomoku {
     address payable[2] playerAdd;
-    address player0;
-    address player1;
     string player0Name;
     string player1Name;
     address nextPlayer;
@@ -142,7 +140,6 @@ contract Gomoku {
     event GameInitialized(address indexed player0, string player1Alias, address playerWhite, uint coins);
     event GameJoined(address indexed player0, string player0Name, address indexed player1, string player1Name, address playerWhite, uint coins);
     event GameStateChanged(int8[128] state);
-    //event Move(address indexed player, uint256 fromIndex, uint256 toIndex);
 
     modifier playerOnly(uint32 _n) {
         if (_n % 2 == 0)
@@ -256,7 +253,7 @@ contract Gomoku {
     }
 
     function initGame(string memory _player0Name) public {
-        player0 = msg.sender;
+        playerAdd[0] = msg.sender;
         player0Name = _player0Name;
 
         //coins = msg.value * 2;
@@ -265,9 +262,9 @@ contract Gomoku {
 
         playerWhite = msg.sender;
 
-        nextPlayer = player0;
+        nextPlayer = playerAdd[0];
 
-        emit GameInitialized(player0, player0Name, playerWhite, coins);
+        emit GameInitialized(playerAdd[0], player0Name, playerWhite, coins);
         //GameStateChanged
     }
 
@@ -284,14 +281,14 @@ contract Gomoku {
 //        }
         //coins += msg.value;
 
-        player1 = msg.sender;
+        playerAdd[1] = msg.sender;
         player1Name = _player1Name;
 
 
         playerWhite = msg.sender;
-        nextPlayer = player0;
+        nextPlayer = playerAdd[0];
 
-        emit GameJoined(player0, player0Name, player1, player1Name, playerWhite, coins);
+        emit GameJoined(playerAdd[0], player0Name, playerAdd[1], player1Name, playerWhite, coins);
     }
 }
 
