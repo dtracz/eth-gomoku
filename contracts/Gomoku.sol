@@ -122,6 +122,7 @@ contract Gomoku {
     address payable[2] playerAdd;
 
     GomokuBackend game;
+    bool unapplied;
     Move lastMove;
     int8 lastPlayer;
 
@@ -146,6 +147,24 @@ contract Gomoku {
         else
             _;
 
+    }
+
+    /**
+     * If any move is played (even incorrect) "on top" of last one,
+     * that move becames approved and is applied
+     * bytes32 _hashPrev: hash of the previous move from the struct of just played.
+     */
+    modifier approveLast(bytes32 _hashPrev) {
+        if (unapplied) {
+            bytes32 _lastHash = keccak256(abi.encode(lastMove));
+            require(_lastHash == _hashPrev);
+            // apply previous (it's now signed by both players)
+            int8 _winner = game.move(bytes(lastMove.code), lastPlayer);
+            if (_winner != 0)
+                pay(_winner);
+            unapplied = false;
+        }
+        _;
     }
 
     modifier moveCorrect(string memory _code, int8 _player) {
@@ -191,23 +210,18 @@ contract Gomoku {
         public
         payable
         playerOnly(_move.mvIdx)
+        // WHAT IF I DON'T WANT TO APPROVE LAST?
+        approveLast(_move.hashPrev)
         surrenderHandler(_move.code, playerID[msg.sender])
         moveCorrect(_move.code, playerID[msg.sender])
         stakeVerifier()
     {
         // drawProposal is valid only till next move
         drawProposal = 0;
-        // verify if this move follows previous
-        bytes32 _lastHash = keccak256(abi.encode(lastMove));
-        require(_lastHash == _move.hashPrev);
-        // apply previous (it's now signed by both players)
-        int8 _winner = game.move(bytes(lastMove.code), lastPlayer);
-        if (_winner != 0) {
-            pay(_winner);
-        } else {
-            lastMove = _move;
-            lastPlayer = playerID[msg.sender];
-        }
+        // set this move as last (for opponent to apptoval)
+        lastMove = _move;
+        lastPlayer = playerID[msg.sender];
+        unapplied = true;
     }
 
     /**
