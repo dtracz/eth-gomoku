@@ -96,8 +96,7 @@ contract GomokuBackend {
 
 
 contract Gomoku {
-    address player0;
-    address player1;
+    address payable[2] playerAdd;
 
     GomokuBackend game;
     Move lastMove;
@@ -105,20 +104,29 @@ contract Gomoku {
 
     int8 drawProposal;
 
-    mapping(address => int8) private players;
+    mapping(address => int8) private playerID;
+
+    uint[2] balance;
 
     modifier playerOnly(uint32 _n) {
         if (_n % 2 == 0)
-            require(msg.sender == player0);
+            require(msg.sender == playerAdd[0]);
         else
-            require(msg.sender == player1);
+            require(msg.sender == playerAdd[1]);
         _;
     }
 
     modifier moveCorrect(string memory _code, int8 _player) {
         require(game.isCorrect(bytes(_code), _player));
         _;
-    } 
+    }
+
+    modifier stakeVerifier() {
+        uint8 _senderID = uint8(playerID[msg.sender]);
+        require(balance[_senderID] + msg.value >= balance[1 - _senderID]);
+        balance[_senderID] += msg.value;
+        _;
+    }
 
     struct Move {
         address gameAddress;
@@ -139,8 +147,10 @@ contract Gomoku {
 
     function play(Move memory _move, bytes32 _signature)
         public
+        payable
         playerOnly(_move.mvIdx)
-        moveCorrect(_move.code, players[msg.sender])
+        moveCorrect(_move.code, playerID[msg.sender])
+        stakeVerifier()
     {
         drawProposal = 0;
         bytes32 _lastHash = keccak256(abi.encode(lastMove));
@@ -150,14 +160,22 @@ contract Gomoku {
             pay(_winner);
         } else {
             lastMove = _move;
-            lastPlayer = players[msg.sender];
+            lastPlayer = playerID[msg.sender];
         }
     }
 
-    function pay(int8 player)
+    function pay(int8 _winner)
         private
     {
-        // ...
+        if (_winner > 0) {
+            uint _commonStake = balance[0]<balance[1] ? balance[0] : balance[1];
+            playerAdd[uint8(_winner)].transfer(_commonStake);
+            balance[0] -= _commonStake;
+            balance[1] -= _commonStake;
+        }
+        for (uint8 i = 0; i < 2; i++)
+            if (balance[i] > 0)
+                playerAdd[i].transfer(balance[i]);
     }
 }
 
