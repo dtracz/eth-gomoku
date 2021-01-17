@@ -139,6 +139,15 @@ contract Gomoku {
         _;
     }
 
+    modifier surrenderHandler(string memory _code, int8 _player) {
+        // let's say: empty string code means surrender
+        if (bytes(_code).length == 0)
+            pay(1 - _player);
+        else
+            _;
+
+    }
+
     modifier moveCorrect(string memory _code, int8 _player) {
         require(game.isCorrect(bytes(_code), _player));
         _;
@@ -182,6 +191,7 @@ contract Gomoku {
         public
         payable
         playerOnly(_move.mvIdx)
+        surrenderHandler(_move.code, playerID[msg.sender])
         moveCorrect(_move.code, playerID[msg.sender])
         stakeVerifier()
     {
@@ -208,7 +218,7 @@ contract Gomoku {
     function pay(int8 _winner)
         private
     {
-        if (_winner > 0) {
+        if (_winner >= 0) {
             uint _commonStake = balance[0]<balance[1] ? balance[0] : balance[1];
             playerAdd[uint8(_winner)].transfer(_commonStake);
             balance[0] -= _commonStake;
