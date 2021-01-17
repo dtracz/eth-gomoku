@@ -14,7 +14,7 @@ contract GomokuBackend {
     }
 
     GameState gameState;
-    int8 winning;
+    int8 winner;
 
     function decode(bytes memory _str)
         private
@@ -49,7 +49,7 @@ contract GomokuBackend {
     {
         MoveCode memory _code = decode(_str);
         return (gameState.board[_code.x][_code.y] == 0
-            && winning == 0);
+            && winner == 0);
     }
 
     function move(bytes memory _str, int8 _player)
@@ -59,9 +59,11 @@ contract GomokuBackend {
         MoveCode memory _code = decode(_str);
         gameState.board[_code.x][_code.y] = _player;
         gameState.nMoves++;
-        if (checkWin(_code, _player))
-            winning = _player;
-        return _player;
+        if (gameState.nMoves >= 19*19)
+            winner = -1;
+        else if (checkWin(_code, _player))
+            winner = _player;
+        return winner;
     } 
 
     function checkWin(MoveCode memory _code, int8 _player)
@@ -101,6 +103,8 @@ contract Gomoku {
     Move lastMove;
     int8 lastPlayer;
 
+    int8 drawProposal;
+
     mapping(address => int8) private players;
 
     modifier playerOnly(uint32 _n) {
@@ -124,11 +128,21 @@ contract Gomoku {
         bytes32 hashGameState;
     }
 
+    function proposeDraw(int8 _player, bytes32 _signature)
+        public
+    {
+        if (drawProposal == 0)
+            drawProposal = _player;
+        else if (drawProposal != _player)
+            pay(-1);
+    }
+
     function play(Move memory _move, bytes32 _signature)
         public
         playerOnly(_move.mvIdx)
         moveCorrect(_move.code, players[msg.sender])
     {
+        drawProposal = 0;
         bytes32 _lastHash = keccak256(abi.encode(lastMove));
         require(_lastHash == _move.hashPrev);
         int8 _winner = game.move(bytes(lastMove.code), lastPlayer);
