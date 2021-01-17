@@ -14,8 +14,13 @@ contract GomokuBackend {
     }
 
     GameState gameState;
-    int8 winning;
+    int8 winner;
 
+    /**
+     * Translate a string encoded move into a MoveCode.
+     * bytes memory _str: move encoded and represented as a string.
+     * returns: MoveCode memory _code: move represented as a MoveCode structure.
+     */
     function decode(bytes memory _str)
         private
         pure
@@ -42,6 +47,12 @@ contract GomokuBackend {
         return _code;
     }
 
+    /**
+     * Verify if the move is correct. Needs to be called from outside the contract.
+     * bytes memory _str: move encoded and represented as a string.
+     * int8 _player: ID of the player who played the move.
+     * returns: bool: the result.
+     */
     function isCorrect(bytes memory _str, int8 _player)
         public
         view
@@ -49,9 +60,16 @@ contract GomokuBackend {
     {
         MoveCode memory _code = decode(_str);
         return (gameState.board[_code.x][_code.y] == 0
-            && winning == 0);
+            && winner == 0);
     }
 
+    /**
+     * Apply move to the board.
+     * bytes memory _str: move encoded and represented as a string.
+     * int8 _player: ID of the player who played the move.
+     * returns: int8 _winner: ID of the player who won,
+     *                        -1 if draw was acheved or 0 on other case.
+     */
     function move(bytes memory _str, int8 _player)
         public
         returns(int8)
@@ -59,11 +77,18 @@ contract GomokuBackend {
         MoveCode memory _code = decode(_str);
         gameState.board[_code.x][_code.y] = _player;
         gameState.nMoves++;
-        if (checkWin(_code, _player))
-            winning = _player;
-        return _player;
+        if (gameState.nMoves >= 19*19)
+            winner = -1;
+        else if (checkWin(_code, _player))
+            winner = _player;
+        return winner;
     }
 
+    /**
+     * Check if after this move game is at the winning state (exactly 5 stones in line).
+     * MoveCode memory _code: code of the last move payed.
+     * int8 _player: ID of the player who played the move.
+     */
     function checkWin(MoveCode memory _code, int8 _player)
         private
         view
@@ -94,6 +119,7 @@ contract GomokuBackend {
 
 
 contract Gomoku {
+    address payable[2] playerAdd;
     address player0;
     address player1;
     string player0Name;
@@ -103,10 +129,15 @@ contract Gomoku {
     uint coins; // What this game is worth: ether paid into the game
 
     GomokuBackend game;
+    bool unapplied;
     Move lastMove;
     int8 lastPlayer;
 
-    mapping(address => int8) private players;
+    int8 drawProposal;
+
+    mapping(address => int8) private playerID;
+
+    uint[2] balance;
 
     event GameInitialized(address indexed player0, string player1Alias, address playerWhite, uint coins);
     event GameJoined(address indexed player0, string player0Name, address indexed player1, string player1Name, address playerWhite, uint coins);
@@ -115,14 +146,48 @@ contract Gomoku {
 
     modifier playerOnly(uint32 _n) {
         if (_n % 2 == 0)
-            require(msg.sender == player0);
+            require(msg.sender == playerAdd[0]);
         else
-            require(msg.sender == player1);
+            require(msg.sender == playerAdd[1]);
+        _;
+    }
+
+    modifier surrenderHandler(string memory _code, int8 _player) {
+        // let's say: empty string code means surrender
+        if (bytes(_code).length == 0)
+            pay(1 - _player);
+        else
+            _;
+
+    }
+
+    /**
+     * If any move is played (even incorrect) "on top" of last one,
+     * that move becames approved and is applied
+     * bytes32 _hashPrev: hash of the previous move from the struct of just played.
+     */
+    modifier approveLast(bytes32 _hashPrev) {
+        if (unapplied) {
+            bytes32 _lastHash = keccak256(abi.encode(lastMove));
+            require(_lastHash == _hashPrev);
+            // apply previous (it's now signed by both players)
+            int8 _winner = game.move(bytes(lastMove.code), lastPlayer);
+            if (_winner != 0)
+                pay(_winner);
+            unapplied = false;
+        }
         _;
     }
 
     modifier moveCorrect(string memory _code, int8 _player) {
         require(game.isCorrect(bytes(_code), _player));
+        _;
+    }
+
+    modifier stakeVerifier() {
+        uint8 _senderID = uint8(playerID[msg.sender]);
+        require(balance[_senderID] + msg.value >= balance[1 - _senderID]);
+        balance[_senderID] += msg.value;
         _;
     }
 
@@ -134,26 +199,60 @@ contract Gomoku {
         bytes32 hashGameState;
     }
 
-    function play(Move memory _move, bytes32 _signature)
+    /**
+     * Propose draw. Popopsal is valid till any other move is played and cannot be withdrawn.
+     * int8 _player: ID of poposing player (will be verified).
+     * bytes32 _signature: signature of the player.
+     */
+    function proposeDraw(int8 _player, bytes32 _signature)
         public
-        playerOnly(_move.mvIdx)
-        moveCorrect(_move.code, players[msg.sender])
     {
-        bytes32 _lastHash = keccak256(abi.encode(lastMove));
-        require(_lastHash == _move.hashPrev);
-        int8 _winner = game.move(bytes(lastMove.code), lastPlayer);
-        if (_winner != 0) {
-            pay(_winner);
-        } else {
-            lastMove = _move;
-            lastPlayer = players[msg.sender];
-        }
+        if (drawProposal == 0)
+            drawProposal = _player;
+        else if (drawProposal != _player)
+            pay(-1);
     }
 
-    function pay(int8 player)
+    /**
+     * Update the game with one more move.
+     * Move memory _move: encoded move with addidional info.
+     * bytes32 _signature: signature of the player.
+     */
+    function play(Move memory _move, bytes32 _signature)
+        public
+        payable
+        playerOnly(_move.mvIdx)
+        // WHAT IF I DON'T WANT TO APPROVE LAST?
+        approveLast(_move.hashPrev)
+        surrenderHandler(_move.code, playerID[msg.sender])
+        moveCorrect(_move.code, playerID[msg.sender])
+        stakeVerifier()
+    {
+        // drawProposal is valid only till next move
+        drawProposal = 0;
+        // set this move as last (for opponent to apptoval)
+        lastMove = _move;
+        lastPlayer = playerID[msg.sender];
+        unapplied = true;
+    }
+
+    /**
+     * Pay the stake to players. All to the winner (except of excess of the one who lost),
+     * or each balance to the owner in case of draw.
+     * int8 _winner: ID of the winner, or -1 if draw.
+     */
+    function pay(int8 _winner)
         private
     {
-        // ...
+        if (_winner >= 0) {
+            uint _commonStake = balance[0]<balance[1] ? balance[0] : balance[1];
+            playerAdd[uint8(_winner)].transfer(_commonStake);
+            balance[0] -= _commonStake;
+            balance[1] -= _commonStake;
+        }
+        for (uint8 i = 0; i < 2; i++)
+            if (balance[i] > 0)
+                playerAdd[i].transfer(balance[i]);
     }
 
     function initGame(string memory _player0Name) public {
