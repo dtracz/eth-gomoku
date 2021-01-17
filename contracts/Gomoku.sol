@@ -16,6 +16,11 @@ contract GomokuBackend {
     GameState gameState;
     int8 winner;
 
+    /**
+     * Translate a string encoded move into a MoveCode.
+     * bytes memory _str: move encoded and represented as a string.
+     * returns: MoveCode memory _code: move represented as a MoveCode structure.
+     */
     function decode(bytes memory _str)
         private
         pure
@@ -42,6 +47,12 @@ contract GomokuBackend {
         return _code;
     }
 
+    /**
+     * Verify if the move is correct. Needs to be called from outside the contract.
+     * bytes memory _str: move encoded and represented as a string.
+     * int8 _player: ID of the player who played the move.
+     * returns: bool: the result.
+     */
     function isCorrect(bytes memory _str, int8 _player)
         public
         view
@@ -52,6 +63,13 @@ contract GomokuBackend {
             && winner == 0);
     }
 
+    /**
+     * Apply move to the board.
+     * bytes memory _str: move encoded and represented as a string.
+     * int8 _player: ID of the player who played the move.
+     * returns: int8 _winner: ID of the player who won,
+     *                        -1 if draw was acheved or 0 on other case.
+     */
     function move(bytes memory _str, int8 _player)
         public
         returns(int8)
@@ -66,6 +84,11 @@ contract GomokuBackend {
         return winner;
     } 
 
+    /**
+     * Check if after this move game is at the winning state (exactly 5 stones in line).
+     * MoveCode memory _code: code of the last move payed.
+     * int8 _player: ID of the player who played the move.
+     */
     function checkWin(MoveCode memory _code, int8 _player)
         private
         view
@@ -136,6 +159,11 @@ contract Gomoku {
         bytes32 hashGameState;
     }
 
+    /**
+     * Propose draw. Popopsal is valid till any other move is played and cannot be withdrawn.
+     * int8 _player: ID of poposing player (will be verified).
+     * bytes32 _signature: signature of the player.
+     */
     function proposeDraw(int8 _player, bytes32 _signature)
         public
     {
@@ -145,6 +173,11 @@ contract Gomoku {
             pay(-1);
     }
 
+    /**
+     * Update the game with one more move.
+     * Move memory _move: encoded move with addidional info.
+     * bytes32 _signature: signature of the player.
+     */
     function play(Move memory _move, bytes32 _signature)
         public
         payable
@@ -152,9 +185,12 @@ contract Gomoku {
         moveCorrect(_move.code, playerID[msg.sender])
         stakeVerifier()
     {
+        // drawProposal is valid only till next move
         drawProposal = 0;
+        // verify if this move follows previous
         bytes32 _lastHash = keccak256(abi.encode(lastMove));
         require(_lastHash == _move.hashPrev);
+        // apply previous (it's now signed by both players)
         int8 _winner = game.move(bytes(lastMove.code), lastPlayer);
         if (_winner != 0) {
             pay(_winner);
@@ -164,6 +200,11 @@ contract Gomoku {
         }
     }
 
+    /**
+     * Pay the stake to players. All to the winner (except of excess of the one who lost),
+     * or each balance to the owner in case of draw.
+     * int8 _winner: ID of the winner, or -1 if draw.
+     */
     function pay(int8 _winner)
         private
     {
