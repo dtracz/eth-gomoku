@@ -86,11 +86,13 @@ App = {
       loader.hide()
       content.show()
     }
-  }
+  },
 
   initGame: () => {
-
-  }
+    console.log('Trying to initialize game');
+    App.gomoku.initGame("Jack");
+    console.log("gamed initialized", App.gomoku.player0)
+  },
 
 
 }
@@ -98,5 +100,9 @@ App = {
 $(() => {
   $(window).load(() => {
     App.load()
-  })
+  });
+  $('#init-button').click(() => {
+    App.initGame();
+  });
+
 })
