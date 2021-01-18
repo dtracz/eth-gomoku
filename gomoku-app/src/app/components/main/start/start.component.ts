@@ -11,9 +11,10 @@ export class StartComponent implements OnInit {
 
   playerName: string;
   formSubmitted: boolean = false;
-  userForm: FormGroup;
+  form: FormGroup;
   validationMessages = [
-    {type: 'required', message: "Player name is required."}
+    {type: 'required', message: "Player name is required."},
+    {type: 'minLength', message: "Player name cannot be empty."}
   ];
 
   constructor(private fb: FormBuilder, private startService: StartService) {
@@ -24,17 +25,17 @@ export class StartComponent implements OnInit {
   }
 
   private createForms() {
-    this.userForm = this.fb.group({
-      playerName: new FormControl(this.playerName, Validators.required)
+    this.form = this.fb.group({
+      playerName: new FormControl(this.playerName, Validators.compose([Validators.required, Validators.minLength(1)]))
     });
   }
 
   submitForm() {
-    if (this.userForm.invalid) {
+    if (this.form.invalid) {
       alert("INVALID FORM");
     } else {
-      console.log(this.userForm.value);
-      this.startService.startGame(this.userForm.value);
+      console.log(this.form.value);
+      this.startService.startGame(this.form.value);
     }
   }
 
