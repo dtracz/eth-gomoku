@@ -274,6 +274,7 @@ contract Gomoku {
     function initGame(string memory _player0Name)
         public
         payable
+        returns(address)
     {
         playerAdd[0] = msg.sender;
         playerID[msg.sender] = 0;
@@ -283,6 +284,7 @@ contract Gomoku {
         emit GameInitialized(playerAdd[0], playerName[0], firstPlayer, balance[0]);
         //state = defaultState;
         //GameStateChanged
+        return address(this);
     }
 
     /**
@@ -292,6 +294,7 @@ contract Gomoku {
     function joinGame(string memory _player1Name)
         public
         payable
+        returns(address)
     {
         // Check that this game does not have a second player yet
         require (playerAdd[1] == address(0));
@@ -303,6 +306,7 @@ contract Gomoku {
         emit GameJoined(playerAdd[0], playerName[0],
                         playerAdd[1], playerName[1],
                         firstPlayer, balance[1] + balance[0]);
+        return address(this);
     }
 }
 
