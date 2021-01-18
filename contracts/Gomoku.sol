@@ -183,8 +183,8 @@ contract Gomoku {
      * bytes32 _hashPrev: hash of the previous move from the struct of just played.
      */
     modifier approveLast(bytes32 _hashPrev) {
-        bytes32 _lastHash = keccak256(abi.encode(lastMove));
-        require(_lastHash == _hashPrev);
+        // bytes32 _lastHash = keccak256(abi.encode(lastMove));
+        // require(_lastHash == _hashPrev);
         if (unapplied) {
             // apply previous (it's now signed by both players)
             int8 _winner = game.move(bytes(lastMove.code), lastPlayer);
