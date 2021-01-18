@@ -28,20 +28,19 @@ contract GomokuBackend {
     {
         MoveCode memory _code;
         uint8 i = 0;
-        require(_str.length < 256);
-        require(_str[i] == '(');
+        require(uint8(_str[i]) == 40); // '('
         i++;
         while (i < _str.length - 2 && (uint8(_str[i]) >= 48 || uint8(_str[i]) <= 57)) {
             uint8 d = uint8(_str[i]) - 48; //uint8('0');
             _code.x = 10*_code.x + d;
         }
-        require(_str[i] == ',');
+        require(uint8(_str[i]) == 44); // ','
         i++;
         while (i < _str.length - 1 && (uint8(_str[i]) >= 48 || uint8(_str[i]) <= 57)) {
             uint8 d = uint8(_str[i]) - 48; //uint8('0');
             _code.y = 10*_code.y + d;
         }
-        require(_str[i] == ')');
+        require(uint8(_str[i]) == 41); // ')'
         i++;
         require(i == _str.length);
         return _code;
@@ -119,30 +118,29 @@ contract GomokuBackend {
 
 
 contract Gomoku {
-    address payable[2] playerAdd;
-    string player0Name;
-    string player1Name;
-    address nextPlayer;
-    address playerWhite; // First player will be white
-    uint coins; // What this game is worth: ether paid into the game
+    address payable[2] public playerAdd;
+    mapping(address => int8) public playerID;
+    string[2] playerName;
+    uint8 firstPlayer; // who starts the game
 
     GomokuBackend game;
     bool unapplied;
     Move lastMove;
-    int8 lastPlayer;
+    int8 lastPlayer;  // who played last move
 
     int8 drawProposal;
-
-    mapping(address => int8) private playerID;
-
     uint[2] balance;
 
-    event GameInitialized(address indexed player0, string player1Alias, address playerWhite, uint coins);
-    event GameJoined(address indexed player0, string player0Name, address indexed player1, string player1Name, address playerWhite, uint coins);
+
+    event GameInitialized(address indexed player, string player1Alias,
+                          uint8 firstPlayer, uint coins);
+    event GameJoined(address indexed player0, string player0Name,
+                     address indexed player1, string player1Name,
+                     uint8 firstPlayer, uint coins);
     event GameStateChanged(int8[128] state);
 
     modifier playerOnly(uint32 _n) {
-        if (_n % 2 == 0)
+        if ((_n + firstPlayer) % 2 == 0)
             require(msg.sender == playerAdd[0]);
         else
             require(msg.sender == playerAdd[1]);
@@ -155,7 +153,6 @@ contract Gomoku {
             pay(1 - _player);
         else
             _;
-
     }
 
     /**
@@ -252,43 +249,43 @@ contract Gomoku {
                 playerAdd[i].transfer(balance[i]);
     }
 
-    function initGame(string memory _player0Name) public {
+    /**
+     * Initialize a new game.
+     * string player0Name: Nickname of the player creating the game.
+     * bool startGame: Pass true or false depending on if the creator will start the game.
+     */
+    function initGame(string memory _player0Name)
+        public
+        payable
+    {
         playerAdd[0] = msg.sender;
-        player0Name = _player0Name;
-
-        //coins = msg.value * 2;
-
+        playerID[msg.sender] = 0;
+        playerName[0] = _player0Name;
+        balance[0] = msg.value;
+        // firstPlayer = _playFirst ? 0 : 1;
+        emit GameInitialized(playerAdd[0], playerName[0], firstPlayer, balance[0]);
         //state = defaultState;
-
-        playerWhite = msg.sender;
-
-        nextPlayer = playerAdd[0];
-
-        emit GameInitialized(playerAdd[0], player0Name, playerWhite, coins);
         //GameStateChanged
     }
 
-
-    function joinGame(string memory _player1Name) public {
+    /**
+     * Join to the initialized game.
+     * string player1Name: Nickname of the player joining the game.
+     */
+    function joinGame(string memory _player1Name)
+        public
+        payable
+    {
         // Check that this game does not have a second player yet
-//        if (player1 != 0) {
-//            throw;
-//        }
-
-        // throw if the second player did not match the bet.
-//        if (msg.value != coins) {
-//            throw;
-//        }
-        //coins += msg.value;
-
+        require (playerAdd[1] == address(0));
+        require (msg.value >= balance[0]);
         playerAdd[1] = msg.sender;
-        player1Name = _player1Name;
-
-
-        playerWhite = msg.sender;
-        nextPlayer = playerAdd[0];
-
-        emit GameJoined(playerAdd[0], player0Name, playerAdd[1], player1Name, playerWhite, coins);
+        playerID[msg.sender] = 1;
+        playerName[1] = _player1Name;
+        balance[1] = msg.value;
+        emit GameJoined(playerAdd[0], playerName[0],
+                        playerAdd[1], playerName[1],
+                        firstPlayer, balance[1] + balance[0]);
     }
 }
 
