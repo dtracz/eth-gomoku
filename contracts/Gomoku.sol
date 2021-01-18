@@ -139,6 +139,13 @@ contract Gomoku {
         bytes32 hashGameState;
     }
 
+    struct Signature {
+         uint8 v;
+         bytes32 r;
+         bytes32 s;
+    }
+
+
     event GameInitialized(address indexed player, string player1Alias,
                           uint8 firstPlayer, uint coins);
     event GameJoined(address indexed player0, string player0Name,
@@ -146,16 +153,19 @@ contract Gomoku {
                      uint8 firstPlayer, uint coins);
     event GameStateChanged(int8[128] state);
 
-    modifier metadataVerifivation(Move memory _move) {
+
+    modifier metadataVerifivation(Move memory _move, Signature memory _sign) {
         // verify if move is for this game
         require(_move.gameAddress == address(this));
         // check if played by proper player
-        if ((_move.mvIdx + firstPlayer) % 2 == 0)
+        uint8 _playerID = uint8((_move.mvIdx + firstPlayer) % 2);
+        if (_playerID == 0)
             require(msg.sender == playerAdd[0]);
         else
             require(msg.sender == playerAdd[1]);
         // verify signature
-        // todo
+        bytes32 hash = keccak256(abi.encode(_move));
+        require(ecrecover(hash, _sign.v, _sign.r, _sign.s) == playerAdd[_playerID]);
         _;
     }
 
@@ -202,12 +212,15 @@ contract Gomoku {
      * int8 _player: ID of poposing player (will be verified).
      * bytes32 _signature: signature of the player.
      */
-    function proposeDraw(int8 _player, bytes32 _signature)
+    function proposeDraw(int8 _player, Signature memory _sign)
         public
     {
+        bytes32 hash = keccak256(abi.encode("draw", lastMove));
+        require(ecrecover(hash, _sign.v, _sign.r, _sign.s) == playerAdd[uint8(_player)]);
+        // set draw proposal or accept opponent's one
         if (drawProposal == 0)
             drawProposal = _player;
-        else if (drawProposal != _player)
+        else if (drawProposal == 1-_player)
             pay(-1);
     }
 
@@ -216,10 +229,10 @@ contract Gomoku {
      * Move memory _move: encoded move with addidional info.
      * bytes32 _signature: signature of the player.
      */
-    function play(Move memory _move, bytes32 _signature)
+    function play(Move memory _move, Signature memory _sign)
         public
         payable
-        metadataVerifivation(_move)
+        metadataVerifivation(_move, _sign)
         // WHAT IF I DON'T WANT TO APPROVE LAST?
         approveLast(_move.hashPrev)
         surrenderHandler(_move.code, playerID[msg.sender])
