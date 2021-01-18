@@ -1,6 +1,7 @@
 import {Component, OnInit} from '@angular/core';
 import {FormBuilder, FormControl, FormGroup, Validators} from "@angular/forms";
 import {StartService} from "../../../services/start.service";
+import {Router} from "@angular/router";
 
 @Component({
   selector: 'app-start',
@@ -17,7 +18,7 @@ export class StartComponent implements OnInit {
     {type: 'minLength', message: "Player name cannot be empty."}
   ];
 
-  constructor(private fb: FormBuilder, private startService: StartService) {
+  constructor(private fb: FormBuilder, private startService: StartService, private router: Router) {
   }
 
   ngOnInit(): void {

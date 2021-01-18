@@ -8,5 +8,5 @@
     </mat-error>
   </mat-form-field>
   <br/>
-  <button mat-raised-button color="primary" type="submit">Start game</button>
+  <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid">Start game</button>
 </form>
