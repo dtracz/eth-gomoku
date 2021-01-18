@@ -1,12 +1,13 @@
-<div class="ng-scope">
-  <div class="container">
-    <ul class="nav">
-      <li>
-        <a routerLink='/start'>home</a>
-      </li>
-      <li>
-        <a routerLink='/transfer'>transfer</a>
-      </li>
-    </ul>
-  </div>
-</div>
+<mat-toolbar class="mat-toolbar mat-toolbar-single-row mat-primary">
+  <mat-toolbar-row class="mat-toolbar-row">
+    <a mat-button routerLink='/home'>
+      <span class="mat-button">Home</span>
+    </a>
+    <a mat-button routerLink='/start'>
+      <span class="mat-button">Start game</span>
+    </a>
+    <a mat-button routerLink='/join'>
+      <span class="mat-button">Join game</span>
+    </a>
+  </mat-toolbar-row>
+</mat-toolbar>

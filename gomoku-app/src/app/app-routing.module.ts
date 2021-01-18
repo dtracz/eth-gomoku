@@ -1,11 +1,15 @@
 import {NgModule} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {Routes, RouterModule} from '@angular/router';
-import {StartComponent} from "./components/start/start.component";
+import {HomeComponent} from "./components/main/home/home.component";
 import {TransferComponent} from "./components/transfer/transfer.component";
+import {JoinComponent} from "./components/main/join/join.component";
+import {StartComponent} from "./components/main/start/start.component";
 
 const routes: Routes = [
-  {path: '', redirectTo: '/start', pathMatch: 'full'},
+  {path: '', redirectTo: '/home', pathMatch: 'full'},
+  {path: 'home', component: HomeComponent},
+  {path: 'join', component: JoinComponent},
   {path: 'start', component: StartComponent},
   {path: 'transfer', component: TransferComponent}
 ];
