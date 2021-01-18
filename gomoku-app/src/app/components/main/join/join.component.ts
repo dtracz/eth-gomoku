@@ -1,6 +1,7 @@
 import {Component, OnInit} from '@angular/core';
 import {JoinService} from "../../../services/join.service";
 import {FormBuilder, FormControl, FormGroup, Validators} from "@angular/forms";
+import {Router} from "@angular/router";
 
 @Component({
   selector: 'app-join',
@@ -20,8 +21,7 @@ export class JoinComponent implements OnInit {
     gameAddress: [{type: 'required', message: "Game address is required."}]
   };
 
-
-  constructor(private fb: FormBuilder, private joinService: JoinService) {
+  constructor(private fb: FormBuilder, private joinService: JoinService, private router: Router) {
   }
 
   ngOnInit(): void {
