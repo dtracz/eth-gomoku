@@ -19,7 +19,8 @@ import {GameComponent} from './components/main/game/game.component';
 import {JoinComponent} from './components/main/join/join.component';
 import {StartComponent} from './components/main/start/start.component';
 import {MatToolbarModule} from "@angular/material/toolbar";
-import { AccountInfoComponent } from './components/account-info/account-info.component';
+import {AccountInfoComponent} from './components/account-info/account-info.component';
+import {MatCardModule} from "@angular/material/card";
 
 @NgModule({
   declarations: [
