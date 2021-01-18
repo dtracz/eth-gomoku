@@ -131,6 +131,13 @@ contract Gomoku {
     int8 drawProposal;
     uint[2] balance;
 
+    struct Move {
+        address gameAddress;
+        uint32 mvIdx;
+        string code;
+        bytes32 hashPrev;
+        bytes32 hashGameState;
+    }
 
     event GameInitialized(address indexed player, string player1Alias,
                           uint8 firstPlayer, uint coins);
@@ -139,11 +146,16 @@ contract Gomoku {
                      uint8 firstPlayer, uint coins);
     event GameStateChanged(int8[128] state);
 
-    modifier playerOnly(uint32 _n) {
-        if ((_n + firstPlayer) % 2 == 0)
+    modifier metadataVerifivation(Move memory _move) {
+        // verify if move is for this game
+        require(_move.gameAddress == address(this));
+        // check if played by proper player
+        if ((_move.mvIdx + firstPlayer) % 2 == 0)
             require(msg.sender == playerAdd[0]);
         else
             require(msg.sender == playerAdd[1]);
+        // verify signature
+        // todo
         _;
     }
 
@@ -161,9 +173,9 @@ contract Gomoku {
      * bytes32 _hashPrev: hash of the previous move from the struct of just played.
      */
     modifier approveLast(bytes32 _hashPrev) {
+        bytes32 _lastHash = keccak256(abi.encode(lastMove));
+        require(_lastHash == _hashPrev);
         if (unapplied) {
-            bytes32 _lastHash = keccak256(abi.encode(lastMove));
-            require(_lastHash == _hashPrev);
             // apply previous (it's now signed by both players)
             int8 _winner = game.move(bytes(lastMove.code), lastPlayer);
             if (_winner != 0)
@@ -183,14 +195,6 @@ contract Gomoku {
         require(balance[_senderID] + msg.value >= balance[1 - _senderID]);
         balance[_senderID] += msg.value;
         _;
-    }
-
-    struct Move {
-        address gameAddress;
-        uint32 mvIdx;
-        string code;
-        bytes32 hashPrev;
-        bytes32 hashGameState;
     }
 
     /**
@@ -215,7 +219,7 @@ contract Gomoku {
     function play(Move memory _move, bytes32 _signature)
         public
         payable
-        playerOnly(_move.mvIdx)
+        metadataVerifivation(_move)
         // WHAT IF I DON'T WANT TO APPROVE LAST?
         approveLast(_move.hashPrev)
         surrenderHandler(_move.code, playerID[msg.sender])
