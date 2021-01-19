@@ -146,7 +146,7 @@ contract Gomoku {
     }
 
 
-    event GameInitialized(address indexed player, string player1Alias,
+    event GameInitialized(address indexed player, string playerName,
                           uint8 firstPlayer, uint coins);
     event GameJoined(address indexed player0, string player0Name,
                      address indexed player1, string player1Name,
