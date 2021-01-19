@@ -37,7 +37,9 @@ export class StartComponent implements OnInit {
       alert("INVALID FORM");
     } else {
       const playerName = this.form.value.playerName;
-      this.startService.startGame(playerName);
+      this.startService.startGame(playerName).then(status => {
+        this.gameEthereumService.gameAddress = status['logs'][0]['address'];
+      });
       this.gameEthereumService.playerColour = FieldState.White;
       this.gameEthereumService.playerName = playerName;
       this.router.navigate(['/game']);

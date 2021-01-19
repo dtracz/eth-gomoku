@@ -11,14 +11,8 @@ const GOMOKU_SIZE = 19;
 export class GameComponent implements OnInit {
 
   readonly fieldStates: FieldState[][];
-  readonly playerName: string;
-  readonly playerColour: FieldState;
-  readonly gameAddress: string;
 
-  constructor(private gameService: GameEthereumService) {
-    this.playerName = gameService.playerName;
-    this.playerColour = gameService.playerColour;
-    this.gameAddress = gameService.gameAddress;
+  constructor(public gameService: GameEthereumService) {
     this.fieldStates = new Array(GOMOKU_SIZE);
     for (let i = 0; i < GOMOKU_SIZE; i++) {
       this.fieldStates[i] = new Array(GOMOKU_SIZE).fill(0);
