@@ -298,6 +298,8 @@ contract Gomoku {
     {
         // Check that this game does not have a second player yet
         require (playerAdd[1] == address(0));
+        // The same player coannot play on both sides
+        require (msg.sender != playerAdd[0]);
         require (msg.value >= balance[0]);
         playerAdd[1] = msg.sender;
         playerID[msg.sender] = 1;
