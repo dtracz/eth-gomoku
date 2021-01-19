@@ -1,0 +1,46 @@
+.board {
+  margin: auto;
+  margin-top: 10px;
+  width: 400px;
+  height: 400px;
+}
+
+.board-row {
+  width: 100%;
+  height: 5.263%;
+  border-bottom: 1px solid white;
+  box-sizing: border-box;
+}
+
+.game-field {
+  display: inline-block;
+  width: 5.263%;
+  height: 100%;
+  background-color: burlywood;
+  float: left;
+  border-radius: 3px;
+  border-left: 1px solid white;
+  box-sizing: border-box;
+}
+
+.game-field-free {
+  height: 100%;
+  width: 100%;
+}
+
+.game-field-white {
+  height: 100%;
+  width: 100%;
+  background-color: white;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.game-field-black {
+  height: 100%;
+  width: 100%;
+  background-color: black;
+  border-radius: 50%;
+  display: inline-block;
+}
+
