@@ -17,22 +17,28 @@ export class StartService extends AbstractContractService {
     super();
   }
 
-  startGame(playerName: string) {
+  startGame(playerName: string): Promise<any> {
     this.getAccount();
-    const gomokuContract = contract(contractPath);
-    gomokuContract.setProvider(this.web3);
-    gomokuContract.deployed().then(instance => {
-      instance.initGame(playerName,
-        {
-          from: this.account
-        });
-    }).then(gameAddress => {
-      console.log("GAME ADDRES:" + gameAddress);
-      // if (gameAddress) {
-      //   return Promise.resolve(gameAddress);
-      // }
-    }).catch(err => {
-      console.log(err);
+    return new Promise((resolve, reject) => {
+      const gomokuContract = contract(contractPath);
+      gomokuContract.setProvider(this.web3);
+      gomokuContract.deployed().then(instance => {
+        return instance.initGame(playerName,
+          {
+            from: this.account
+          });
+      }).then(status => {
+        // for (let s in status) {
+        //   console.log(s + ":");
+        //   console.log(status[s]);
+        // }
+        if (status) {
+          return resolve(status);
+        }
+      }).catch(err => {
+        console.log(err);
+        return reject('start.service error');
+      });
     });
   }
 }
