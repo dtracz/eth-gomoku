@@ -2,6 +2,7 @@ import {Component, OnInit} from '@angular/core';
 import {JoinService} from "../../../services/join.service";
 import {FormBuilder, FormControl, FormGroup, Validators} from "@angular/forms";
 import {Router} from "@angular/router";
+import {FieldState, GameEthereumService} from "../../../services/game.ethereum.service";
 
 @Component({
   selector: 'app-join',
@@ -21,7 +22,7 @@ export class JoinComponent implements OnInit {
     gameAddress: [{type: 'required', message: "Game address is required."}]
   };
 
-  constructor(private fb: FormBuilder, private joinService: JoinService, private router: Router) {
+  constructor(private fb: FormBuilder, private joinService: JoinService, private gameEthereumService: GameEthereumService, private router: Router) {
   }
 
   ngOnInit(): void {
@@ -39,8 +40,13 @@ export class JoinComponent implements OnInit {
     if (this.form.invalid) {
       alert("INVALID FORM");
     } else {
-      console.log(this.form.value);
-      //this.joinService.startGame(this.form.value);
+      const playerName = this.form.value.playerName;
+      const gameAddress = this.form.value.gameAddress;
+      this.joinService.joinGame(playerName, gameAddress);
+      this.gameEthereumService.playerColour = FieldState.Black;
+      this.gameEthereumService.playerName = playerName;
+      this.gameEthereumService.gameAddress = gameAddress;
+      this.router.navigate(['/game'])
     }
   }
 }

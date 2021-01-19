@@ -17,15 +17,14 @@ export class JoinService extends AbstractContractService {
     super();
   }
 
-  joinGame(playerName: string, gameAddress: string) {
+  joinGame(playerName: string, gameAddress: string) { //, gameAddress: string) {
     this.getAccount();
-    const that = this;
     const gomokuContract = contract(contractPath);
-    gomokuContract.setProvider(that.web3);
+    gomokuContract.setProvider(this.web3);
     gomokuContract.deployed().then(instance => {
       instance.joinGame(playerName, gameAddress,
         {
-          from: that.account
+          from: this.account
         });
     });
   }

@@ -2,6 +2,7 @@ import {Component, OnInit} from '@angular/core';
 import {FormBuilder, FormControl, FormGroup, Validators} from "@angular/forms";
 import {StartService} from "../../../services/start.service";
 import {Router} from "@angular/router";
+import {FieldState, GameEthereumService} from "../../../services/game.ethereum.service";
 
 @Component({
   selector: 'app-start',
@@ -18,7 +19,7 @@ export class StartComponent implements OnInit {
     {type: 'minLength', message: "Player name cannot be empty."}
   ];
 
-  constructor(private fb: FormBuilder, private startService: StartService, private router: Router) {
+  constructor(private fb: FormBuilder, private startService: StartService, private gameEthereumService: GameEthereumService, private router: Router) {
   }
 
   ngOnInit(): void {
@@ -35,9 +36,11 @@ export class StartComponent implements OnInit {
     if (this.form.invalid) {
       alert("INVALID FORM");
     } else {
-      console.log(this.form.value);
-      this.startService.startGame(this.form.value);
+      const playerName = this.form.value.playerName;
+      this.startService.startGame(playerName);
+      this.gameEthereumService.playerColour = FieldState.White;
+      this.gameEthereumService.playerName = playerName;
+      this.router.navigate(['/game']);
     }
   }
-
 }
