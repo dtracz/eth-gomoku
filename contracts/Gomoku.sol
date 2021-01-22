@@ -153,6 +153,44 @@ contract Gomoku {
                      uint8 firstPlayer, uint coins);
     event GameStateChanged(int8[128] state);
 
+    struct TestStruct {
+        uint8 n;
+        string str;
+    }
+
+    function uint2bytes(uint16 i)
+        private
+        pure
+        returns(string memory)
+    {
+        if (i == 0)
+            return "0";
+        uint16 j = i;
+        uint8 length;
+        while (j != 0){
+            length++;
+            j /= 10;
+        }
+        bytes memory bstr = new bytes(length);
+        uint8 k = length - 1;
+        while (i != 0){
+            bstr[k--] = byte(uint8(48 + i % 10));
+            i /= 10;
+        }
+        return string(bstr);
+    }
+
+    event TestEvent(uint8 n, string str, bytes32 hash, bytes code,
+                    uint8 v, bytes32 r, bytes32 s, address ver);
+
+    function testFoo(TestStruct memory _ts, Signature memory _sign) public {
+        bytes memory _code = abi.encode(_ts);
+        string memory _lgth = uint2bytes(uint16(bytes(_code).length));
+        bytes memory _msg = abi.encodePacked("\x19Ethereum Signed Message:\n", _lgth, _code);
+        bytes32 _hash = keccak256(_msg);
+        address ver = ecrecover(_hash, _sign.v, _sign.r, _sign.s);
+        emit TestEvent(_ts.n, _ts.str, _hash, _msg, _sign.v, _sign.r, _sign.s, ver);
+    }
 
     modifier metadataVerifivation(Move memory _move, Signature memory _sign) {
         // verify if move is for this game
