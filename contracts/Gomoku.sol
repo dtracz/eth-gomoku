@@ -106,7 +106,7 @@ contract Gomoku {
             if (unapplied) {
                 // apply previous (it's now signed by both players)
                 int8 _winner = game.move(bytes(lastMove.code), lastPlayer);
-                if (_winner != 0)
+                if (_winner <= 0)
                     pay(_winner);
                 unapplied = false;
             }
@@ -140,7 +140,7 @@ contract Gomoku {
         if (drawProposal == 0)
             drawProposal = _player;
         else if (drawProposal == 1-_player)
-            pay(-1);
+            pay(2);
     }
 
     /**
@@ -175,11 +175,10 @@ contract Gomoku {
     function pay(int8 _winner)
         private
     {
-        if (_winner >= 0) {
+        if (_winner < 2) {
             uint _commonStake = balance[0]<balance[1] ? balance[0] : balance[1];
-            playerAdd[uint8(_winner)].transfer(_commonStake);
-            balance[0] -= _commonStake;
-            balance[1] -= _commonStake;
+            balance[uint8(_winner)] += _commonStake;
+            balance[uint8(1-_winner)] -= _commonStake;
         }
         for (uint8 i = 0; i < 2; i++)
             if (balance[i] > 0)

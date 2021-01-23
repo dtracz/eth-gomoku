@@ -14,7 +14,7 @@ contract GomokuBackend {
     }
 
     GameState gameState;
-    int8 winner;
+    int8 winner = -1; // -1 -- in progress; 0/1 -- player with this ID wins; 2 -- draw
 
     /**
      * Translate a string encoded move into a MoveCode.
@@ -61,7 +61,7 @@ contract GomokuBackend {
     {
         MoveCode memory _code = decode(_str);
         return (gameState.board[_code.x][_code.y] == 0
-            && winner == 0);
+            && winner < 0);
     }
 
     /**
@@ -69,7 +69,7 @@ contract GomokuBackend {
      * bytes memory _str: move encoded and represented as a string.
      * int8 _player: ID of the player who played the move.
      * returns: int8 _winner: ID of the player who won,
-     *                        -1 if draw was acheved or 0 on other case.
+     *                        2 if draw was acheved or -1 on other case.
      */
     function move(bytes memory _str, int8 _player)
         public
@@ -79,7 +79,7 @@ contract GomokuBackend {
         gameState.board[_code.x][_code.y] = _player;
         gameState.nMoves++;
         if (gameState.nMoves >= 19*19)
-            winner = -1;
+            winner = 2;
         else if (checkWin(_code, _player))
             winner = _player;
         return winner;
