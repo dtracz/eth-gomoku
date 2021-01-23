@@ -76,11 +76,11 @@ contract GomokuBackend {
         returns(int8)
     {
         MoveCode memory _code = decode(_str);
-        gameState.board[_code.x][_code.y] = _player;
+        gameState.board[_code.x][_code.y] = _player + 1;
         gameState.nMoves++;
         if (gameState.nMoves >= 19*19)
             winner = 2;
-        else if (checkWin(_code, _player))
+        else if (checkWin(_code))
             winner = _player;
         return winner;
     }
@@ -90,12 +90,13 @@ contract GomokuBackend {
      * MoveCode memory _code: code of the last move payed.
      * int8 _player: ID of the player who played the move.
      */
-    function checkWin(MoveCode memory _code, int8 _player)
+    function checkWin(MoveCode memory _code)
         private
         view
         returns(bool)
     {
         uint8[3][3] memory _sameInDir;
+        int8 _player = gameState.board[_code.x][_code.y];
         for (int8 i = -1; i <= 1; i++) {
             for (int8 j = -1; j <= 1; j++) {
                 if (i == 0 && j == 0)

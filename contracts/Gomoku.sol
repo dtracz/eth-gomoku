@@ -10,7 +10,7 @@ contract Gomoku {
     string[2] playerName;
     int8 firstPlayer; // who starts the game
 
-    GomokuBackend public game;
+    GomokuBackend private game;
     bool unapplied;
     Move public lastMove;
     int8 lastPlayer;  // who played last move
@@ -170,7 +170,7 @@ contract Gomoku {
     /**
      * Pay the stake to players. All to the winner (except of excess of the one who lost),
      * or each balance to the owner in case of draw.
-     * int8 _winner: ID of the winner, or -1 if draw.
+     * int8 _winner: ID of the winner, or 2 if draw.
      */
     function pay(int8 _winner)
         private
