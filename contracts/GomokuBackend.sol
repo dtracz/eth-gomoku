@@ -17,6 +17,25 @@ contract GomokuBackend {
     int8 winner = -1; // -1 -- in progress; 0/1 -- player with this ID wins; 2 -- draw
 
     /**
+     * returns: the string representation of the board.
+     */
+    function getStringState()
+        view
+        public
+        returns(string memory)
+    {
+        bytes memory _str = new bytes(19*20);
+        bytes3 _char = 0x2e4f58; // ['.', 'O', 'X']
+        for (uint16 i = 0; i < 19; i++) {
+            for (uint16 j = 0; j < 19; j++) {
+                _str[i*20 + j] = _char[uint8(gameState.board[i][j])];
+            }
+            _str[i*20+19] = 0x0a;
+        }
+        return string(_str);
+    }
+
+    /**
      * Translate a string encoded move into a MoveCode.
      * bytes memory _str: move encoded and represented as a string.
      * returns: MoveCode memory _code: move represented as a MoveCode structure.

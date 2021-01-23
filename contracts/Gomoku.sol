@@ -39,7 +39,6 @@ contract Gomoku {
                      address indexed player1, string player1Name,
                      int8 firstPlayer, uint coins);
     event MovePlayed(string move, int8 player);
-    // event GameStateChanged(int8[128] state);
 
 
     function uint2bytes(uint16 i)
@@ -62,6 +61,14 @@ contract Gomoku {
             i /= 10;
         }
         return string(bstr);
+    }
+
+    function getApprovedState()
+        view
+        public
+        returns(string memory)
+    {
+        return game.getStringState();
     }
 
     function sigRecover(bytes memory _code, Signature memory _sign)
@@ -106,7 +113,7 @@ contract Gomoku {
             if (unapplied) {
                 // apply previous (it's now signed by both players)
                 int8 _winner = game.move(bytes(lastMove.code), lastPlayer);
-                if (_winner <= 0)
+                if (_winner >= 0)
                     pay(_winner);
                 unapplied = false;
             }
