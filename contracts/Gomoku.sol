@@ -3,6 +3,8 @@ pragma experimental ABIEncoderV2; // for passing structs
 
 
 contract GomokuBackend {
+    address public selfAdd = address(this);
+
     struct MoveCode {
         uint8 x;
         uint8 y;
@@ -57,9 +59,10 @@ contract GomokuBackend {
         view
         returns(bool)
     {
-        MoveCode memory _code = decode(_str);
-        return (gameState.board[_code.x][_code.y] == 0
-            && winner == 0);
+        // MoveCode memory _code = decode(_str);
+        return true;
+        // return (gameState.board[_code.x][_code.y] == 0
+        //     && winner == 0);
     }
 
     /**
@@ -118,14 +121,15 @@ contract GomokuBackend {
 
 
 contract Gomoku {
+    address public selfAdd = address(this);
     address payable[2] public playerAdd;
     mapping(address => int8) public playerID;
     string[2] playerName;
     uint8 firstPlayer; // who starts the game
 
-    GomokuBackend game;
+    GomokuBackend public game;
     bool unapplied;
-    Move lastMove;
+    Move public lastMove;
     int8 lastPlayer;  // who played last move
 
     int8 drawProposal;
@@ -153,10 +157,6 @@ contract Gomoku {
                      uint8 firstPlayer, uint coins);
     event GameStateChanged(int8[128] state);
 
-    struct TestStruct {
-        uint8 n;
-        string str;
-    }
 
     function uint2bytes(uint16 i)
         private
@@ -180,30 +180,25 @@ contract Gomoku {
         return string(bstr);
     }
 
-    event TestEvent(uint8 n, string str, bytes32 hash, bytes code,
-                    uint8 v, bytes32 r, bytes32 s, address ver);
-
-    function testFoo(TestStruct memory _ts, Signature memory _sign) public {
-        bytes memory _code = abi.encode(_ts);
-        string memory _lgth = uint2bytes(uint16(bytes(_code).length));
+    function sigRecover(bytes memory _code, Signature memory _sign)
+        pure
+        private
+        returns(address)
+    {
+        string memory _lgth = uint2bytes(uint16(_code.length));
         bytes memory _msg = abi.encodePacked("\x19Ethereum Signed Message:\n", _lgth, _code);
         bytes32 _hash = keccak256(_msg);
-        address ver = ecrecover(_hash, _sign.v, _sign.r, _sign.s);
-        emit TestEvent(_ts.n, _ts.str, _hash, _msg, _sign.v, _sign.r, _sign.s, ver);
+        return ecrecover(_hash, _sign.v, _sign.r, _sign.s);
     }
 
     modifier metadataVerifivation(Move memory _move, Signature memory _sign) {
         // verify if move is for this game
         require(_move.gameAddress == address(this));
-        // check if played by proper player
-        uint8 _playerID = uint8((_move.mvIdx + firstPlayer) % 2);
-        if (_playerID == 0)
-            require(msg.sender == playerAdd[0]);
-        else
-            require(msg.sender == playerAdd[1]);
-        // verify signature
-        bytes32 hash = keccak256(abi.encode(_move));
-        require(ecrecover(hash, _sign.v, _sign.r, _sign.s) == playerAdd[_playerID]);
+        require(_move.mvIdx == lastMove.mvIdx + 1);
+        // check if played by proper player (1 because move indexing starts at 1)
+        uint8 _playerID = uint8((1 + _move.mvIdx + firstPlayer) % 2);
+        address _trueSender = sigRecover(abi.encode(_move), _sign);
+        require(_trueSender == playerAdd[_playerID]);
         _;
     }
 
@@ -220,21 +215,23 @@ contract Gomoku {
      * that move becames approved and is applied
      * bytes32 _hashPrev: hash of the previous move from the struct of just played.
      */
-    modifier approveLast(bytes32 _hashPrev) {
-        bytes32 _lastHash = keccak256(abi.encode(lastMove));
-        require(_lastHash == _hashPrev);
-        if (unapplied) {
-            // apply previous (it's now signed by both players)
-            int8 _winner = game.move(bytes(lastMove.code), lastPlayer);
-            if (_winner != 0)
-                pay(_winner);
-            unapplied = false;
+    modifier approveLast(uint32 _mvIdx, bytes32 _hashPrev) {
+        if (_mvIdx > 1) {
+            bytes32 _lastHash = keccak256(abi.encode(lastMove));
+            require(_lastHash == _hashPrev);
+            if (unapplied) {
+                // apply previous (it's now signed by both players)
+                // int8 _winner = game.move(bytes(lastMove.code), lastPlayer);
+                // if (_winner != 0)
+                //     pay(_winner);
+                unapplied = false;
+            }
         }
         _;
     }
 
     modifier moveCorrect(string memory _code, int8 _player) {
-        require(game.isCorrect(bytes(_code), _player));
+        // require(game.isCorrect(bytes(_code), _player));
         _;
     }
 
@@ -271,11 +268,11 @@ contract Gomoku {
         public
         payable
         metadataVerifivation(_move, _sign)
-        // WHAT IF I DON'T WANT TO APPROVE LAST?
-        approveLast(_move.hashPrev)
+        // // WHAT IF I DON'T WANT TO APPROVE LAST?
+        approveLast(_move.mvIdx, _move.hashPrev)
         surrenderHandler(_move.code, playerID[msg.sender])
-        moveCorrect(_move.code, playerID[msg.sender])
         stakeVerifier()
+        moveCorrect(_move.code, playerID[msg.sender])
     {
         // drawProposal is valid only till next move
         drawProposal = 0;
@@ -283,7 +280,9 @@ contract Gomoku {
         lastMove = _move;
         lastPlayer = playerID[msg.sender];
         unapplied = true;
+        emit MovePlayed(_move);
     }
+    event MovePlayed(Move _move);
 
     /**
      * Pay the stake to players. All to the winner (except of excess of the one who lost),
@@ -309,11 +308,12 @@ contract Gomoku {
      * string player0Name: Nickname of the player creating the game.
      * bool startGame: Pass true or false depending on if the creator will start the game.
      */
-    function initGame(string memory _player0Name)
+    function initGame(address _game, string memory _player0Name)
         public
         payable
         returns(address)
     {
+        game = GomokuBackend(_game);
         playerAdd[0] = msg.sender;
         playerID[msg.sender] = 0;
         playerName[0] = _player0Name;
