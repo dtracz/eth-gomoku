@@ -1,5 +1,7 @@
 import {AbstractContractService} from "./abstract.contract.service";
 import {Injectable} from '@angular/core';
+import {JoinService} from "./join.service";
+import {SignService} from "./sign.service";
 
 declare let window: any;
 declare let require: any;
@@ -18,6 +20,15 @@ class Move {
   address: string;
 
 }
+const MoveType = {
+  'Move' : {
+    'gameAddress': 'address',
+    'mvIdx': 'uint32',
+    'code': 'string',
+    'hashPrev': 'bytes32',
+    'hashGameState': 'bytes32'
+  }
+}
 
 @Injectable({
   providedIn: 'root'
@@ -28,7 +39,7 @@ export class GameEthereumService extends AbstractContractService {
   playerName: string;
   playerColour: FieldState;
 
-  constructor() {
+  constructor(private signService: SignService) {
     super();
   }
 
@@ -37,10 +48,22 @@ export class GameEthereumService extends AbstractContractService {
     const that = this;
     const gomokuContract = contract(contractPath);
     gomokuContract.setProvider(that.web3);
+
+    var zero32 = '0x0000000000000000000000000000000000000000000000000000000000000000'
+    const move = {
+      'gameAddress': this.gameAddress,
+      'mvIdx': 1,
+      'code': `(${i},${j})`,
+      'hashPrev': zero32,
+      'hashGameState': zero32
+    }
+
+    const signature = this.signService.sign(move, MoveType, this.account)
+
     gomokuContract.deployed().then(instance => {
-      instance.play({},
+      instance.play(move, signature,
         {
-          from: that.account
+          from: this.account
         });
     });
   }

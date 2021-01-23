@@ -26,6 +26,8 @@ export class GameComponent implements OnInit {
     this.fieldStates[i][j] = this.gameService.playerColour;
     console.log(`Index[${i}][${j}] update`)
     console.log(this.fieldStates);
+    this.sendMove(i,j);
+    console.log("Move send to blockchain")
   }
 
   sendMove(i, j) {

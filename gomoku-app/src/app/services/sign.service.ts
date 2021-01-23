@@ -12,43 +12,10 @@ const Web3EthAbi = require('web3-eth-abi');
 @Injectable({
   providedIn: 'root'
 })
-export class MoveService extends AbstractContractService {
+export class SignService extends AbstractContractService {
 
   constructor() {
     super();
-  }
-
-  MoveType = {
-    'Move' : {
-      'gameAddress': 'address',
-      'mvIdx': 'uint32',
-      'code': 'string',
-      'hashPrev': 'bytes32',
-      'hashGameState': 'bytes32'
-    }
-  }
-
-  move(playerName: string, gameAddress: string) {
-    this.getAccount();
-    const gomokuContract = contract(contractPath);
-
-    var zero32 = '0x0000000000000000000000000000000000000000000000000000000000000000'
-    const move = {
-      'gameAddress': gameAddress,
-      'mvIdx': 1,
-      'code': "(10,10)",
-      'hashPrev': zero32,
-      'hashGameState': zero32
-    }
-
-    const signature = this.sign(move, this.MoveType, this.account)
-    gomokuContract.setProvider(this.web3);
-    gomokuContract.deployed().then(instance => {
-      instance.play(move, signature,
-        {
-          from: this.account
-        });
-    });
   }
 
   sign = (struct, structType, account) => {
