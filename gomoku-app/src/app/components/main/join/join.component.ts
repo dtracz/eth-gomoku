@@ -41,11 +41,10 @@ export class JoinComponent implements OnInit {
       alert("INVALID FORM");
     } else {
       const playerName = this.form.value.playerName;
-      const gameAddress = this.form.value.gameAddress;
-      this.joinService.joinGame(playerName, gameAddress);
+      this.joinService.joinGame(playerName).then();
       this.gameEthereumService.playerColour = FieldState.Black;
       this.gameEthereumService.playerName = playerName;
-      this.gameEthereumService.gameAddress = gameAddress;
+      //this.gameEthereumService.gameAddress = gameAddress;
       this.router.navigate(['/game'])
     }
   }
