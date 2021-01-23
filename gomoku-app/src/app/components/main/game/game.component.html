@@ -1,3 +1,27 @@
-<div class="ng-content">
-  <p>game works!</p>
+<div class="control-container">
+  <br/>
+  User name: {{this.gameService.playerName}}
+  <br/>
+  Game address: {{this.gameService.gameAddress}}
+  <br/>
+  <br/>
+  <input matInput type="number" placeholder="Amount" name="Amount">
+  <br/>
+  <button mat-raised-button color="primary" type="submit">Bid</button>
 </div>
+
+<div class="game-container">
+  <div class="board" *ngIf="fieldStates">
+    <div *ngFor="let row of fieldStates; let i = index" class="board-row">
+      <div *ngFor="let field of row; let j = index" class="game-field">
+        <div *ngIf="field == 0" class="game-field-free" (click)="setColour(i, j)"></div>
+        <div *ngIf="field == 1" class="game-field-white"></div>
+        <div *ngIf="field == 2" class="game-field-black"></div>
+      </div>
+    </div>
+  </div>
+  <br/>
+  <button mat-raised-button color="primary" type="submit" (click)="sendMove()">Send move</button>
+  <button mat-raised-button color="primary" type="submit">Propose draw</button>
+</div>
+
