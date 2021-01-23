@@ -1,5 +1,6 @@
 import {AbstractContractService} from "./abstract.contract.service";
 import {Injectable} from '@angular/core';
+import {SignService} from "./sign.service";
 
 declare let window: any;
 declare let require: any;
@@ -14,6 +15,20 @@ export enum FieldState {
   Black
 }
 
+class Move {
+  address: string;
+
+}
+const MoveType = {
+  'Move' : {
+    'gameAddress': 'address',
+    'mvIdx': 'uint32',
+    'code': 'string',
+    'hashPrev': 'bytes32',
+    'hashGameState': 'bytes32'
+  }
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -23,26 +38,34 @@ export class GameEthereumService extends AbstractContractService {
   playerName: string;
   playerColour: FieldState;
 
-  constructor() {
+  constructor(private signService: SignService) {
     super();
   }
 
-  sendMove(move: [number, number]) {
-    this.getAccount();
-    const gomokuContract = contract(contractPath);
-    gomokuContract.setProvider(this.web3);
-    gomokuContract.deployed().then(instance => {
-      //todo: fill with correct values
-      instance.play({
-          gameAddress: this.gameAddress,
-          mvIdx: null,
-          code: `(${move[0]},${move[1]})`,
-          hashPrev: null,
-          hashGameState: null
-        },
-        {
-          from: this.account
-        });
+  sendMove(moveIndexes: [number, number]) {
+    this.getAccount().then(r => {
+      const gomokuContract = contract(contractPath);
+      gomokuContract.setProvider(this.web3);
+
+      var zero32 = '0x0000000000000000000000000000000000000000000000000000000000000001'
+      const move = {
+        'gameAddress': this.gameAddress,
+        'mvIdx': 1,
+        'code': `(${moveIndexes[0]},${moveIndexes[1]})`,
+        'hashPrev': zero32,
+        'hashGameState': zero32
+      };
+
+      const signature = this.signService.sign(move, MoveType, this.account);
+      console.log("Signed move sg:", signature);
+
+      gomokuContract.deployed().then(instance => {
+        //todo: fill with correct values
+        instance.play(move, signature,
+          {
+            from: this.account
+          });
+      });
     });
   }
 
