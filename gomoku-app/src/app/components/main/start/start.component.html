@@ -1,12 +1,12 @@
-<form [formGroup]="userForm" (ngSubmit)="submitForm()">
+<form [formGroup]="form" (ngSubmit)="submitForm()">
   <mat-form-field>
     <mat-label>Player name:</mat-label>
     <input matInput placeholder="Player name" type="text" name="playerName" formControlName="playerName" required>
     <mat-error *ngFor="let validation of validationMessages">
       <mat-error
-        *ngIf="userForm.get('playerName').hasError(validation.type) && (userForm.get('playerName').dirty || userForm.get('playerName').touched)">{{validation.message}}</mat-error>
+        *ngIf="form.get('playerName').hasError(validation.type) && (form.get('playerName').dirty || form.get('playerName').touched)">{{validation.message}}</mat-error>
     </mat-error>
   </mat-form-field>
   <br/>
-  <button mat-raised-button color="primary" type="submit">Start game</button>
+  <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid">Start game</button>
 </form>

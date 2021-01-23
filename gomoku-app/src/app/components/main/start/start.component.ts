@@ -1,6 +1,8 @@
 import {Component, OnInit} from '@angular/core';
 import {FormBuilder, FormControl, FormGroup, Validators} from "@angular/forms";
 import {StartService} from "../../../services/start.service";
+import {Router} from "@angular/router";
+import {FieldState, GameEthereumService} from "../../../services/game.ethereum.service";
 
 @Component({
   selector: 'app-start',
@@ -11,12 +13,13 @@ export class StartComponent implements OnInit {
 
   playerName: string;
   formSubmitted: boolean = false;
-  userForm: FormGroup;
+  form: FormGroup;
   validationMessages = [
-    {type: 'required', message: "Player name is required."}
+    {type: 'required', message: "Player name is required."},
+    {type: 'minLength', message: "Player name cannot be empty."}
   ];
 
-  constructor(private fb: FormBuilder, private startService: StartService) {
+  constructor(private fb: FormBuilder, private startService: StartService, private gameEthereumService: GameEthereumService, private router: Router) {
   }
 
   ngOnInit(): void {
@@ -24,18 +27,22 @@ export class StartComponent implements OnInit {
   }
 
   private createForms() {
-    this.userForm = this.fb.group({
-      playerName: new FormControl(this.playerName, Validators.required)
+    this.form = this.fb.group({
+      playerName: new FormControl(this.playerName, Validators.compose([Validators.required, Validators.minLength(1)]))
     });
   }
 
   submitForm() {
-    if (this.userForm.invalid) {
+    if (this.form.invalid) {
       alert("INVALID FORM");
     } else {
-      console.log(this.userForm.value);
-      this.startService.startGame(this.userForm.value);
+      const playerName = this.form.value.playerName;
+      this.startService.startGame(playerName).then(status => {
+        this.gameEthereumService.gameAddress = status['logs'][0]['address'];
+      });
+      this.gameEthereumService.playerColour = FieldState.White;
+      this.gameEthereumService.playerName = playerName;
+      this.router.navigate(['/game']);
     }
   }
-
 }

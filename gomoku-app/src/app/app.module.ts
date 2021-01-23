@@ -20,7 +20,7 @@ import {JoinComponent} from './components/main/join/join.component';
 import {StartComponent} from './components/main/start/start.component';
 import {MatToolbarModule} from "@angular/material/toolbar";
 import {AccountInfoComponent} from './components/account-info/account-info.component';
-import {MatCardModule} from "@angular/material/card";
+import {FlexLayoutModule} from "@angular/flex-layout";
 
 @NgModule({
   declarations: [
@@ -46,7 +46,8 @@ import {MatCardModule} from "@angular/material/card";
     MatNativeDateModule,
     FormsModule,
     ReactiveFormsModule,
-    MatToolbarModule
+    MatToolbarModule,
+    FlexLayoutModule
   ],
   providers: [],
   bootstrap: [AppComponent]
