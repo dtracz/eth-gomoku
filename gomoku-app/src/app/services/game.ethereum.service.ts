@@ -14,11 +14,6 @@ export enum FieldState {
   Black
 }
 
-class Move {
-  address: string;
-
-}
-
 @Injectable({
   providedIn: 'root'
 })
@@ -32,41 +27,45 @@ export class GameEthereumService extends AbstractContractService {
     super();
   }
 
-  sendMove(i: number, j: number) {
+  sendMove(move: [number, number]) {
     this.getAccount();
-    const that = this;
     const gomokuContract = contract(contractPath);
-    gomokuContract.setProvider(that.web3);
+    gomokuContract.setProvider(this.web3);
     gomokuContract.deployed().then(instance => {
-      instance.play({},
+      //todo: fill with correct values
+      instance.play({
+          gameAddress: this.gameAddress,
+          mvIdx: null,
+          code: `(${move[0]},${move[1]})`,
+          hashPrev: null,
+          hashGameState: null
+        },
         {
-          from: that.account
+          from: this.account
         });
     });
   }
 
   proposeDraw(playerName: string, gameAddress: string) {
     this.getAccount();
-    const that = this;
     const gomokuContract = contract(contractPath);
-    gomokuContract.setProvider(that.web3);
+    gomokuContract.setProvider(this.web3);
     gomokuContract.deployed().then(instance => {
       instance.joinGame(playerName, gameAddress,
         {
-          from: that.account
+          from: this.account
         });
     });
   }
 
   bid(playerName: string, gameAddress: string) {
     this.getAccount();
-    const that = this;
     const gomokuContract = contract(contractPath);
-    gomokuContract.setProvider(that.web3);
+    gomokuContract.setProvider(this.web3);
     gomokuContract.deployed().then(instance => {
       instance.joinGame(playerName, gameAddress,
         {
-          from: that.account
+          from: this.account
         });
     });
   }
