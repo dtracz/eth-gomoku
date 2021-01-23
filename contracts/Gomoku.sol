@@ -8,7 +8,7 @@ contract Gomoku {
     address payable[2] public playerAdd;
     mapping(address => int8) public playerID;
     string[2] playerName;
-    uint8 firstPlayer; // who starts the game
+    int8 firstPlayer; // who starts the game
 
     GomokuBackend public game;
     bool unapplied;
@@ -34,11 +34,12 @@ contract Gomoku {
 
 
     event GameInitialized(address indexed player, string playerName,
-                          uint8 firstPlayer, uint coins);
+                          int8 firstPlayer, uint coins);
     event GameJoined(address indexed player0, string player0Name,
                      address indexed player1, string player1Name,
-                     uint8 firstPlayer, uint coins);
-    event GameStateChanged(int8[128] state);
+                     int8 firstPlayer, uint coins);
+    event MovePlayed(string move, int8 player);
+    // event GameStateChanged(int8[128] state);
 
 
     function uint2bytes(uint16 i)
@@ -79,7 +80,7 @@ contract Gomoku {
         require(_move.gameAddress == address(this));
         require(_move.mvIdx == lastMove.mvIdx + 1);
         // check if played by proper player (1 because move indexing starts at 1)
-        uint8 _playerID = uint8((1 + _move.mvIdx + firstPlayer) % 2);
+        uint8 _playerID = uint8((1 + _move.mvIdx + uint8(firstPlayer)) % 2);
         address _trueSender = sigRecover(abi.encode(_move), _sign);
         require(_trueSender == playerAdd[_playerID]);
         _;
@@ -104,9 +105,9 @@ contract Gomoku {
             require(_lastHash == _hashPrev);
             if (unapplied) {
                 // apply previous (it's now signed by both players)
-                // int8 _winner = game.move(bytes(lastMove.code), lastPlayer);
-                // if (_winner != 0)
-                //     pay(_winner);
+                int8 _winner = game.move(bytes(lastMove.code), lastPlayer);
+                if (_winner != 0)
+                    pay(_winner);
                 unapplied = false;
             }
         }
@@ -114,7 +115,7 @@ contract Gomoku {
     }
 
     modifier moveCorrect(string memory _code, int8 _player) {
-        // require(game.isCorrect(bytes(_code), _player));
+        require(game.isCorrect(bytes(_code), _player));
         _;
     }
 
@@ -161,11 +162,10 @@ contract Gomoku {
         drawProposal = 0;
         // set this move as last (for opponent to apptoval)
         lastMove = _move;
-        lastPlayer = playerID[msg.sender];
+        lastPlayer = (1 + int8(_move.mvIdx) + firstPlayer) % 2;
         unapplied = true;
-        emit MovePlayed(_move);
+        emit MovePlayed(_move.code, lastPlayer);
     }
-    event MovePlayed(Move _move);
 
     /**
      * Pay the stake to players. All to the winner (except of excess of the one who lost),
@@ -191,12 +191,12 @@ contract Gomoku {
      * string player0Name: Nickname of the player creating the game.
      * bool startGame: Pass true or false depending on if the creator will start the game.
      */
-    function initGame(address _game, string memory _player0Name)
+    function initGame(string memory _player0Name)
         public
         payable
         returns(address)
     {
-        game = GomokuBackend(_game);
+        game = new GomokuBackend();
         playerAdd[0] = msg.sender;
         playerID[msg.sender] = 0;
         playerName[0] = _player0Name;

@@ -2,7 +2,6 @@ pragma solidity ^0.5.0;
 pragma experimental ABIEncoderV2; // for passing structs
 
 contract GomokuBackend {
-    address public selfAdd = address(this);
 
     struct MoveCode {
         uint8 x;
@@ -31,15 +30,17 @@ contract GomokuBackend {
         uint8 i = 0;
         require(uint8(_str[i]) == 40); // '('
         i++;
-        while (i < _str.length - 2 && (uint8(_str[i]) >= 48 || uint8(_str[i]) <= 57)) {
+        while (i < _str.length - 2 && uint8(_str[i]) >= 48 && uint8(_str[i]) <= 57) {
             uint8 d = uint8(_str[i]) - 48; //uint8('0');
             _code.x = 10*_code.x + d;
+            i++;
         }
         require(uint8(_str[i]) == 44); // ','
         i++;
-        while (i < _str.length - 1 && (uint8(_str[i]) >= 48 || uint8(_str[i]) <= 57)) {
+        while (i < _str.length - 1 && uint8(_str[i]) >= 48 && uint8(_str[i]) <= 57) {
             uint8 d = uint8(_str[i]) - 48; //uint8('0');
             _code.y = 10*_code.y + d;
+            i++;
         }
         require(uint8(_str[i]) == 41); // ')'
         i++;
@@ -58,10 +59,9 @@ contract GomokuBackend {
         view
         returns(bool)
     {
-        // MoveCode memory _code = decode(_str);
-        return true;
-        // return (gameState.board[_code.x][_code.y] == 0
-        //     && winner == 0);
+        MoveCode memory _code = decode(_str);
+        return (gameState.board[_code.x][_code.y] == 0
+            && winner == 0);
     }
 
     /**

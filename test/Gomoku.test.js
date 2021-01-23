@@ -42,16 +42,12 @@ contract('Gomoku', (accounts) => {
         assert.notEqual(address, null)
         assert.notEqual(address, undefined)
     })
-
+    
     it('start game', async () => {
-        const backendAddr = await this.gomoku.selfAdd()
-        const initResult = await this.gomoku.initGame(backendAddr, "player_0", {from: accounts[0]})
+        const initResult = await this.gomoku.initGame("player_0", {from: accounts[0]})
         const joinResult = await this.gomoku.joinGame("player_1", {from: accounts[1]})
         const event0 = initResult.logs[0].args
         const event1 = joinResult.logs[0].args
-        // console.log(accounts)
-        // console.log(event0)
-        // console.log(event1)
         assert.equal(event0.player, accounts[0])
         assert.equal(event1.player0, accounts[0])
         assert.equal(event1.player1, accounts[1])
@@ -61,26 +57,20 @@ contract('Gomoku', (accounts) => {
     })
 
     it('first move', async () => {
-        // const initResult = await this.gomoku.initGame("player_0", {from: accounts[0]})
-        // const joinResult = await this.gomoku.joinGame("player_1", {from: accounts[1]})
-        // console.log(initResult)
         var gameAddr = await this.gomoku.selfAdd()
-        var hash = Web3Utils.keccak256("dupa")
-        var zero32 = '0x0000000000000000000000000000000000000000000000000000000000000000'
+        const zero32 = '0x0000000000000000000000000000000000000000000000000000000000000000'
         const move = {
             'gameAddress': gameAddr,
             'mvIdx': 1,
             'code': "(10,10)",
             'hashPrev': zero32,
-            'hashGameState': zero32 
+            'hashGameState': zero32
         }
         signature = sign(move, MoveType, accounts[0])
-        // console.log(hash)
-        // console.log(zero)
-        // signature = {v: 27, r: hash, s: hash}
         const moveResult = await this.gomoku.play(move, signature)
         const ev = moveResult.logs[0].args
-        // console.log(ev)
+        assert.equal(ev.move, "(10,10)")
+        assert.equal(ev.player.toNumber(), 0)
     })
 })
 
