@@ -1,131 +1,18 @@
 pragma solidity ^0.5.0;
 pragma experimental ABIEncoderV2; // for passing structs
 
-
-contract GomokuBackend {
-    struct MoveCode {
-        uint8 x;
-        uint8 y;
-    }
-
-    struct GameState {
-        uint32 nMoves;
-        int8[19][19] board;
-    }
-
-    GameState gameState;
-    int8 winner;
-
-    /**
-     * Translate a string encoded move into a MoveCode.
-     * bytes memory _str: move encoded and represented as a string.
-     * returns: MoveCode memory _code: move represented as a MoveCode structure.
-     */
-    function decode(bytes memory _str)
-        private
-        pure
-        returns(MoveCode memory)
-    {
-        MoveCode memory _code;
-        uint8 i = 0;
-        require(uint8(_str[i]) == 40); // '('
-        i++;
-        while (i < _str.length - 2 && (uint8(_str[i]) >= 48 || uint8(_str[i]) <= 57)) {
-            uint8 d = uint8(_str[i]) - 48; //uint8('0');
-            _code.x = 10*_code.x + d;
-        }
-        require(uint8(_str[i]) == 44); // ','
-        i++;
-        while (i < _str.length - 1 && (uint8(_str[i]) >= 48 || uint8(_str[i]) <= 57)) {
-            uint8 d = uint8(_str[i]) - 48; //uint8('0');
-            _code.y = 10*_code.y + d;
-        }
-        require(uint8(_str[i]) == 41); // ')'
-        i++;
-        require(i == _str.length);
-        return _code;
-    }
-
-    /**
-     * Verify if the move is correct. Needs to be called from outside the contract.
-     * bytes memory _str: move encoded and represented as a string.
-     * int8 _player: ID of the player who played the move.
-     * returns: bool: the result.
-     */
-    function isCorrect(bytes memory _str, int8 _player)
-        public
-        view
-        returns(bool)
-    {
-        MoveCode memory _code = decode(_str);
-        return (gameState.board[_code.x][_code.y] == 0
-            && winner == 0);
-    }
-
-    /**
-     * Apply move to the board.
-     * bytes memory _str: move encoded and represented as a string.
-     * int8 _player: ID of the player who played the move.
-     * returns: int8 _winner: ID of the player who won,
-     *                        -1 if draw was acheved or 0 on other case.
-     */
-    function move(bytes memory _str, int8 _player)
-        public
-        returns(int8)
-    {
-        MoveCode memory _code = decode(_str);
-        gameState.board[_code.x][_code.y] = _player;
-        gameState.nMoves++;
-        if (gameState.nMoves >= 19*19)
-            winner = -1;
-        else if (checkWin(_code, _player))
-            winner = _player;
-        return winner;
-    }
-
-    /**
-     * Check if after this move game is at the winning state (exactly 5 stones in line).
-     * MoveCode memory _code: code of the last move payed.
-     * int8 _player: ID of the player who played the move.
-     */
-    function checkWin(MoveCode memory _code, int8 _player)
-        private
-        view
-        returns(bool)
-    {
-        uint8[3][3] memory _sameInDir;
-        for (int8 i = -1; i <= 1; i++) {
-            for (int8 j = -1; j <= 1; j++) {
-                if (i == 0 && j == 0)
-                    continue;
-                int8 x = int8(_code.x) + i;
-                int8 y = int8(_code.y) + j;
-                while (0 <= x && x < 19 &&
-                       0 <= y && y < 19 &&
-                       gameState.board[uint(x)][uint(y)] == _player) {
-                    _sameInDir[uint(x+1)][uint(y+1)]++;
-                    x += i;
-                    y += j;
-                }
-            }
-        }
-        return _sameInDir[1][0] + _sameInDir[1][2] == 5  // horizontal
-            || _sameInDir[0][1] + _sameInDir[2][1] == 5  // vertical
-            || _sameInDir[0][0] + _sameInDir[2][2] == 5  // SW-NE diag
-            || _sameInDir[2][0] + _sameInDir[0][2] == 5; // NW-SE diag
-    }
-}
-
+import "./GomokuBackend.sol";
 
 contract Gomoku {
+    address public selfAdd = address(this);
     address payable[2] public playerAdd;
     mapping(address => int8) public playerID;
     string[2] playerName;
-    uint8 firstPlayer; // who starts the game
+    int8 firstPlayer; // who starts the game
 
-    GomokuBackend game;
+    GomokuBackend private game;
     bool unapplied;
-    Move lastMove;
+    Move public lastMove;
     int8 lastPlayer;  // who played last move
 
     int8 drawProposal;
@@ -146,26 +33,63 @@ contract Gomoku {
     }
 
 
-    event GameInitialized(address indexed player, string player1Alias,
-                          uint8 firstPlayer, uint coins);
+    event GameInitialized(address indexed player, string playerName,
+                          int8 firstPlayer, uint coins);
     event GameJoined(address indexed player0, string player0Name,
                      address indexed player1, string player1Name,
-                     uint8 firstPlayer, uint coins);
-    event GameStateChanged(int8[128] state);
+                     int8 firstPlayer, uint coins);
+    event MovePlayed(string move, int8 player);
 
+
+    function uint2bytes(uint16 i)
+        private
+        pure
+        returns(string memory)
+    {
+        if (i == 0)
+            return "0";
+        uint16 j = i;
+        uint8 length;
+        while (j != 0){
+            length++;
+            j /= 10;
+        }
+        bytes memory bstr = new bytes(length);
+        uint8 k = length - 1;
+        while (i != 0){
+            bstr[k--] = byte(uint8(48 + i % 10));
+            i /= 10;
+        }
+        return string(bstr);
+    }
+
+    function getApprovedState()
+        view
+        public
+        returns(string memory)
+    {
+        return game.getStringState();
+    }
+
+    function sigRecover(bytes memory _code, Signature memory _sign)
+        pure
+        private
+        returns(address)
+    {
+        string memory _lgth = uint2bytes(uint16(_code.length));
+        bytes memory _msg = abi.encodePacked("\x19Ethereum Signed Message:\n", _lgth, _code);
+        bytes32 _hash = keccak256(_msg);
+        return ecrecover(_hash, _sign.v, _sign.r, _sign.s);
+    }
 
     modifier metadataVerifivation(Move memory _move, Signature memory _sign) {
         // verify if move is for this game
         require(_move.gameAddress == address(this));
-        // check if played by proper player
-        uint8 _playerID = uint8((_move.mvIdx + firstPlayer) % 2);
-        if (_playerID == 0)
-            require(msg.sender == playerAdd[0]);
-        else
-            require(msg.sender == playerAdd[1]);
-        // verify signature
-        bytes32 hash = keccak256(abi.encode(_move));
-        require(ecrecover(hash, _sign.v, _sign.r, _sign.s) == playerAdd[_playerID]);
+        require(_move.mvIdx == lastMove.mvIdx + 1);
+        // check if played by proper player (1 because move indexing starts at 1)
+        uint8 _playerID = uint8((1 + _move.mvIdx + uint8(firstPlayer)) % 2);
+        address _trueSender = sigRecover(abi.encode(_move), _sign);
+        require(_trueSender == playerAdd[_playerID]);
         _;
     }
 
@@ -182,15 +106,17 @@ contract Gomoku {
      * that move becames approved and is applied
      * bytes32 _hashPrev: hash of the previous move from the struct of just played.
      */
-    modifier approveLast(bytes32 _hashPrev) {
-        // bytes32 _lastHash = keccak256(abi.encode(lastMove));
-        // require(_lastHash == _hashPrev);
-        if (unapplied) {
-            // apply previous (it's now signed by both players)
-            int8 _winner = game.move(bytes(lastMove.code), lastPlayer);
-            if (_winner != 0)
-                pay(_winner);
-            unapplied = false;
+    modifier approveLast(uint32 _mvIdx, bytes32 _hashPrev) {
+        if (_mvIdx > 1) {
+            bytes32 _lastHash = keccak256(abi.encode(lastMove));
+            require(_lastHash == _hashPrev);
+            if (unapplied) {
+                // apply previous (it's now signed by both players)
+                int8 _winner = game.move(bytes(lastMove.code), lastPlayer);
+                if (_winner >= 0)
+                    pay(_winner);
+                unapplied = false;
+            }
         }
         _;
     }
@@ -221,7 +147,7 @@ contract Gomoku {
         if (drawProposal == 0)
             drawProposal = _player;
         else if (drawProposal == 1-_player)
-            pay(-1);
+            pay(2);
     }
 
     /**
@@ -233,33 +159,33 @@ contract Gomoku {
         public
         payable
         metadataVerifivation(_move, _sign)
-        // WHAT IF I DON'T WANT TO APPROVE LAST?
-        approveLast(_move.hashPrev)
+        // // WHAT IF I DON'T WANT TO APPROVE LAST?
+        approveLast(_move.mvIdx, _move.hashPrev)
         surrenderHandler(_move.code, playerID[msg.sender])
-        moveCorrect(_move.code, playerID[msg.sender])
         stakeVerifier()
+        moveCorrect(_move.code, playerID[msg.sender])
     {
         // drawProposal is valid only till next move
         drawProposal = 0;
         // set this move as last (for opponent to apptoval)
         lastMove = _move;
-        lastPlayer = playerID[msg.sender];
+        lastPlayer = (1 + int8(_move.mvIdx) + firstPlayer) % 2;
         unapplied = true;
+        emit MovePlayed(_move.code, lastPlayer);
     }
 
     /**
      * Pay the stake to players. All to the winner (except of excess of the one who lost),
      * or each balance to the owner in case of draw.
-     * int8 _winner: ID of the winner, or -1 if draw.
+     * int8 _winner: ID of the winner, or 2 if draw.
      */
     function pay(int8 _winner)
         private
     {
-        if (_winner >= 0) {
+        if (_winner < 2) {
             uint _commonStake = balance[0]<balance[1] ? balance[0] : balance[1];
-            playerAdd[uint8(_winner)].transfer(_commonStake);
-            balance[0] -= _commonStake;
-            balance[1] -= _commonStake;
+            balance[uint8(_winner)] += _commonStake;
+            balance[uint8(1-_winner)] -= _commonStake;
         }
         for (uint8 i = 0; i < 2; i++)
             if (balance[i] > 0)
@@ -276,6 +202,7 @@ contract Gomoku {
         payable
         returns(address)
     {
+        game = new GomokuBackend();
         playerAdd[0] = msg.sender;
         playerID[msg.sender] = 0;
         playerName[0] = _player0Name;
