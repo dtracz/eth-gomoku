@@ -15,6 +15,8 @@ const MoveType = {
     }
 }
 
+const ZERO_32 = '0x0000000000000000000000000000000000000000000000000000000000000000'
+
 function sign(struct, structType, account) {
     const code = Web3EthAbi.encodeParameter(structType, struct)
     var signature = web3.eth.sign(account, code)
@@ -58,19 +60,76 @@ contract('Gomoku', (accounts) => {
 
     it('first move', async () => {
         var gameAddr = await this.gomoku.selfAdd()
-        const zero32 = '0x0000000000000000000000000000000000000000000000000000000000000000'
         const move = {
             'gameAddress': gameAddr,
             'mvIdx': 1,
             'code': "(10,10)",
-            'hashPrev': zero32,
-            'hashGameState': zero32
+            'hashPrev': ZERO_32,
+            'hashGameState': ZERO_32 
         }
         signature = sign(move, MoveType, accounts[0])
-        const moveResult = await this.gomoku.play(move, signature)
+        const moveResult = await this.gomoku.play(move, signature, {from: accounts[0]})
         const ev = moveResult.logs[0].args
         assert.equal(ev.move, "(10,10)")
         assert.equal(ev.player.toNumber(), 0)
+    })
+
+    it('second move', async () => {
+        const gameAddr = await this.gomoku.selfAdd()
+        const first = {
+            'gameAddress': gameAddr,
+            'mvIdx': 1,
+            'code': "(10,10)",
+            'hashPrev': ZERO_32,
+            'hashGameState': ZERO_32 
+        }
+        const hashFirst = Web3Utils.keccak256(Web3EthAbi.encodeParameter(MoveType, first));
+        const second = {
+            'gameAddress': gameAddr,
+            'mvIdx': 2,
+            'code': "(10,11)",
+            'hashPrev': hashFirst,
+            'hashGameState': ZERO_32 
+        }
+        signature = sign(second, MoveType, accounts[1])
+        const moveResult = await this.gomoku.play(second, signature, {from: accounts[1]})
+        const ev = moveResult.logs[0].args
+        assert.equal(ev.move, "(10,11)")
+        assert.equal(ev.player.toNumber(), 1)
+    })
+
+    it('third move sent by other player', async () => {
+        const gameAddr = await this.gomoku.selfAdd()
+        const first = {
+            'gameAddress': gameAddr,
+            'mvIdx': 1,
+            'code': "(10,10)",
+            'hashPrev': ZERO_32,
+            'hashGameState': ZERO_32 
+        }
+        const hashFirst = Web3Utils.keccak256(Web3EthAbi.encodeParameter(MoveType, first));
+        const second = {
+            'gameAddress': gameAddr,
+            'mvIdx': 2,
+            'code': "(10,11)",
+            'hashPrev': hashFirst,
+            'hashGameState': ZERO_32 
+        }
+        const hashSecond = Web3Utils.keccak256(Web3EthAbi.encodeParameter(MoveType, second));
+        const third = {
+            'gameAddress': gameAddr,
+            'mvIdx': 3,
+            'code': "(11,11)",
+            'hashPrev': hashSecond,
+            'hashGameState': ZERO_32 
+        }
+        signature = sign(third, MoveType, accounts[0])
+        const moveResult = await this.gomoku.play(third, signature, {from: accounts[1]})
+        const ev = moveResult.logs[0].args
+        assert.equal(ev.move, "(11,11)")
+        assert.equal(ev.player.toNumber(), 0)
+        // const board = await this.gomoku.getApprovedState()
+        // console.log(board)
     })
 })
 
