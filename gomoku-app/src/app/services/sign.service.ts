@@ -18,21 +18,38 @@ export class SignService extends AbstractContractService {
     super();
   }
 
-  sign = (struct, structType, account) => {
+  sign = function(struct, structType, account) {
     console.log("Signing struct:", struct);
     const code = Web3EthAbi.encodeParameter(structType, struct);
-    console.log("test account:", account, " code:", code);
-    let signature = window.web3.eth.sign(code, account);
-    console.log("test sig:", signature);
-    signature = signature.toString().substr(2);
-    const _r = '0x' + signature.slice(0, 64);
-    const _s = '0x' + signature.slice(64, 128);
-    const _v = '0x' + signature.slice(128, 130);
-    let v_decimal = window.web3.utils.toDecimal(_v);
-    if(v_decimal != 27 || v_decimal != 28) {
-      v_decimal += 27
-    }
-    signature = {v: v_decimal, r: _r, s: _s};
-    return signature
+    return window.web3.eth.personal.sign(code, account).then((signature) => {
+      signature = signature.substr(2);
+      const _r = '0x' + signature.slice(0, 64);
+      const _s = '0x' + signature.slice(64, 128);
+      const _v = '0x' + signature.slice(128, 130);
+      let v_decimal = window.web3.utils.toDecimal(_v);
+      if(v_decimal != 27 || v_decimal != 28) {
+        v_decimal += 27
+      }
+      signature = {v: v_decimal, r: _r, s: _s};
+      return signature;
+    });
   }
+
+  // sign = async function(struct, structType, account) {
+  //   console.log("Signing struct:", struct);
+  //   const code = Web3EthAbi.encodeParameter(structType, struct);
+  //   console.log("test account:", account, " code:", code);
+  //   let signature = await window.web3.eth.sign(code, account);
+  //   console.log("test sig:", signature);
+  //   signature = signature.substr(2);
+  //   const _r = '0x' + signature.slice(0, 64);
+  //   const _s = '0x' + signature.slice(64, 128);
+  //   const _v = '0x' + signature.slice(128, 130);
+  //   let v_decimal = window.web3.utils.toDecimal(_v);
+  //   if(v_decimal != 27 || v_decimal != 28) {
+  //     v_decimal += 27
+  //   }
+  //   signature = {v: v_decimal, r: _r, s: _s};
+  //   return signature;
+  // }
 }

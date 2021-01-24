@@ -42,42 +42,46 @@ export class GameEthereumService extends AbstractContractService {
     super();
   }
 
-  sendMove(moveIndexes: [number, number]) {
-    this.getAccount().then(r => {
-      var zero32 = '0x0000000000000000000000000000000000000000000000000000000000000000'
-      const move = {
-        'gameAddress': this.gameAddress,
-        'mvIdx': 1,
-        'code': `(${moveIndexes[0]},${moveIndexes[1]})`,
-        'hashPrev': zero32,
-        'hashGameState': zero32
-      };
-      const signature = this.signService.sign(move, MoveType, this.account);
-      console.log("Signed move sg:", signature);
-      this.sendToBc(move, signature).then(status => {
+  async sendMove(moveIndexes: [number, number]) {
+    const account = await this.getAccount();
+    var zero32 = '0x0000000000000000000000000000000000000000000000000000000000000000';
+    const move = {
+      'gameAddress': this.gameAddress,
+      'mvIdx': 1,
+      'code': `(${moveIndexes[0]},${moveIndexes[1]})`,
+      'hashPrev': zero32,
+      'hashGameState': zero32
+    };
+    const signature = await this.signService.sign(move, MoveType, account);
+    console.log("SIGNATURE:", signature);
+    this.sendToBc(move, signature, account).then(status => {
         console.log("Move applied to bc status:", status);
       })
-    });
+    ;
   }
-  sendToBc(move: any, signature: string): Promise<any> {
-    console.log("send to bc")
+
+  sendToBc(move: any, signature: string, account: string): Promise<any> {
+    console.log("Sending move to blockchain move:", move, " signature:", signature, " account:", account);
     return new Promise((resolve, reject) => {
       const gomokuContract = contract(contractPath);
       gomokuContract.setProvider(this.web3);
       gomokuContract.deployed().then(instance => {
         instance.play(move, signature,
           {
-            from: this.account
+            from: account
           });
       }).then(result => {
         if (result) {
           const res = resolve(result);
-          console.log("halko res:", res);
+          console.log("Sent to blockchain result:", res);
           return res;
         }
+        console.log("Sent to blockchain no result");
       }).catch(error => {
-          if (error)
+          if (error) {
+            console.log("Can't send to blockchain error:", error);
             return reject(error);
+          }
         }
       );
     });
