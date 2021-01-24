@@ -94,7 +94,7 @@ contract Gomoku {
         _;
     }
 
-    modifier verifyOrder(Move memory _prev, Move memory _move, Signature memory _sign) {
+    modifier verifyOrder(Move memory _prev, Move memory _move) {
         require(_move.mvIdx == _prev.mvIdx + 1);
         if (_move.mvIdx > 1) {
             bytes32 _hashPrev = keccak256(abi.encode(_prev));
@@ -167,7 +167,7 @@ contract Gomoku {
         public
         payable
         verifySignature(_move, _sign)
-        verifyOrder(lastMove, _move, _sign)
+        verifyOrder(lastMove, _move)
         surrenderHandler(_move.code, playerID[msg.sender])
         stakeVerifier()
     {
@@ -181,6 +181,44 @@ contract Gomoku {
         lastBlockstamp = block.number;
         unapplied = true;
         emit MovePlayed(_move.code, lastPlayer);
+    }
+
+    function replaceLast(Move memory _newLast, Signature memory _sigNewLast,
+                         Move memory _next, Signature memory _sigNext)
+        private
+        verifySignature(_newLast, _sigNewLast)
+        verifySignature(_next, _sigNext)
+        verifyOrder(_newLast, _next)
+    {
+        require(_newLast.hashPrev == lastMove.hashPrev);
+        lastMove = _newLast;
+    }
+
+    function register(uint32 _nMoves, Move[] memory _moves, Signature[] memory _signs)
+        public
+        payable
+    {
+        require(_nMoves >= 1);
+        uint32 _idx;
+        // skip moves until last
+        for (uint32 i = 0; i < _nMoves; i++) {
+            if (_moves[i].mvIdx >= lastMove.mvIdx) {
+                _idx = i;
+                break;
+            }
+        }
+        // if last move is to be replaced
+        if (_moves[_idx].mvIdx == lastMove.mvIdx
+         && keccak256(abi.encode(_moves[_idx])) != keccak256(abi.encode(lastMove))) {
+            // requre longer move chain
+            require(_nMoves > _idx + 1);
+            replaceLast(_moves[_idx], _signs[_idx], _moves[_idx+1], _signs[_idx+1]);
+            _idx++;
+        }
+        while (_idx < _nMoves) {
+            play(_moves[_idx], _signs[_idx]);
+            _idx++;
+        }
     }
 
     function claimEther()
