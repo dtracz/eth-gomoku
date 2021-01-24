@@ -5,3 +5,13 @@ export interface Move {
   hashPrev: string;
   hashGameState: string;
 }
+
+export const MoveType = {
+  Move: {
+    gameAddress: 'string',
+    mvIdx: 'uint32',
+    code: 'string',
+    hashPrev: 'bytes32',
+    hashGameState: 'bytes32'
+  }
+};

@@ -1,6 +1,6 @@
 import {AbstractContractService} from './abstract.contract.service';
 import {Injectable} from '@angular/core';
-import {eventGameJoined, eventMovePlayed} from './events';
+import {eventGameJoined, eventMovePlayed} from '../utils/events';
 
 declare let require: any;
 const contractPath = require('../../../../build/contracts/Gomoku.json');
@@ -17,7 +17,7 @@ export class StartService extends AbstractContractService {
 
   startGame(playerName: string): Promise<any> {
     this.getAccount()
-      .catch(err => alert(err));
+      .catch(err => alert(`Start: get account error: ${err}`));
 
     return new Promise((resolve, reject) => {
       const gomokuContract = contract(contractPath);
@@ -33,7 +33,7 @@ export class StartService extends AbstractContractService {
           return resolve(status);
         }
       }).catch(err => {
-        alert(err);
+        alert(`Start error:${err}`);
         return reject('start.service error');
       });
     });

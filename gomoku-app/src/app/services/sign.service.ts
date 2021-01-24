@@ -30,5 +30,5 @@ export class SignService extends AbstractContractService {
       signature = {v: v_decimal, r: _r, s: _s};
       return signature;
     });
-  };
+  }
 }
