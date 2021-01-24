@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import {AccountService} from "../../services/account.service";
+import {Component, OnInit} from '@angular/core';
+import {AccountService} from '../../services/account.service';
 
 @Component({
   selector: 'app-account-info',
@@ -8,23 +8,22 @@ import {AccountService} from "../../services/account.service";
 })
 export class AccountInfoComponent implements OnInit {
 
-  constructor(private accountService: AccountService) { }
+  constructor(private accountService: AccountService) {
+  }
+
+  user: { address, transferAddress, balance, amount, remarks };
 
   ngOnInit(): void {
     this.user = {address: '', transferAddress: '', balance: '', amount: '', remarks: ''};
     this.getAccountAndBalance();
   }
 
-  user: { address, transferAddress, balance, amount, remarks };
-
-  getAccountAndBalance = () => {
+  getAccountAndBalance(): void {
     this.accountService.getUserBalance().then((retAccount: any) => {
       this.user.address = retAccount.account;
       this.user.balance = retAccount.balance;
-      console.log('transfer.components :: getAccountAndBalance :: this.user');
-      console.log(this.user);
     }).catch(error => {
-      console.log(error);
+      alert(error);
     });
   }
 
