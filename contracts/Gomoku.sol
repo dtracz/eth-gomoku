@@ -86,14 +86,20 @@ contract Gomoku {
         return ecrecover(_hash, _sign.v, _sign.r, _sign.s);
     }
 
-    modifier metadataVerifivation(Move memory _move, Signature memory _sign) {
-        // verify if move is for this game
+    modifier verifySignature(Move memory _move, Signature memory _sign) {
         require(_move.gameAddress == address(this));
-        require(_move.mvIdx == lastMove.mvIdx + 1);
-        // check if played by proper player (1 because move indexing starts at 1)
         uint8 _playerID = uint8((1 + _move.mvIdx + uint8(firstPlayer)) % 2);
         address _trueSender = sigRecover(abi.encode(_move), _sign);
         require(_trueSender == playerAdd[_playerID]);
+        _;
+    }
+
+    modifier verifyOrder(Move memory _prev, Move memory _move) {
+        require(_move.mvIdx == _prev.mvIdx + 1);
+        if (_move.mvIdx > 1) {
+            bytes32 _hashPrev = keccak256(abi.encode(_prev));
+            require(_move.hashPrev == _hashPrev);
+        }
         _;
     }
 
@@ -110,19 +116,16 @@ contract Gomoku {
      * that move becames approved and is applied
      * bytes32 _hashPrev: hash of the previous move from the struct of just played.
      */
-    modifier approveLast(uint32 _mvIdx, bytes32 _hashPrev) {
-        if (_mvIdx > 1) {
-            bytes32 _lastHash = keccak256(abi.encode(lastMove));
-            require(_lastHash == _hashPrev);
-            if (unapplied) {
-                // apply previous (it's now signed by both players)
-                int8 _winner = game.move(bytes(lastMove.code), lastPlayer);
-                if (_winner >= 0)
-                    pay(_winner);
-                unapplied = false;
-            }
+    function approveLast()
+        private
+    {
+        if (unapplied) {
+            // apply previous (it's now signed by both players)
+            int8 _winner = game.move(bytes(lastMove.code), lastPlayer);
+            if (_winner >= 0)
+                pay(_winner);
+            unapplied = false;
         }
-        _;
     }
 
     modifier moveCorrect(string memory _code, int8 _player) {
@@ -144,6 +147,7 @@ contract Gomoku {
      */
     function proposeDraw(int8 _player, Signature memory _sign)
         public
+        payable
     {
         address _proposerAdd = sigRecover(abi.encode("draw", lastMove), _sign);
         require(_proposerAdd == playerAdd[uint8(_player)]);
@@ -162,13 +166,13 @@ contract Gomoku {
     function play(Move memory _move, Signature memory _sign)
         public
         payable
-        metadataVerifivation(_move, _sign)
-        // WHAT IF I DON'T WANT TO APPROVE LAST?
-        approveLast(_move.mvIdx, _move.hashPrev)
+        verifySignature(_move, _sign)
+        verifyOrder(lastMove, _move)
         surrenderHandler(_move.code, playerID[msg.sender])
         stakeVerifier()
-        moveCorrect(_move.code, playerID[msg.sender])
     {
+        approveLast();
+        require(game.isCorrect(bytes(_move.code), playerID[msg.sender]));
         // drawProposal is valid only till next move
         drawProposal = -1;
         // set this move as last (for opponent to apptoval)
@@ -179,8 +183,48 @@ contract Gomoku {
         emit MovePlayed(_move.code, lastPlayer);
     }
 
+    function replaceLast(Move memory _newLast, Signature memory _sigNewLast,
+                         Move memory _next, Signature memory _sigNext)
+        private
+        verifySignature(_newLast, _sigNewLast)
+        verifySignature(_next, _sigNext)
+        verifyOrder(_newLast, _next)
+    {
+        require(_newLast.hashPrev == lastMove.hashPrev);
+        lastMove = _newLast;
+    }
+
+    function register(uint32 _nMoves, Move[] memory _moves, Signature[] memory _signs)
+        public
+        payable
+    {
+        require(_nMoves >= 1);
+        uint32 _idx;
+        // skip moves until last
+        for (uint32 i = 0; i < _nMoves; i++) {
+            if (_moves[i].mvIdx >= lastMove.mvIdx) {
+                _idx = i;
+                break;
+            }
+        }
+        if (_moves[_idx].mvIdx == lastMove.mvIdx) {
+           // if last move is to be replaced
+            if (keccak256(abi.encode(_moves[_idx])) != keccak256(abi.encode(lastMove))) {
+                // requre longer move chain
+                require(_nMoves > _idx + 1);
+                replaceLast(_moves[_idx], _signs[_idx], _moves[_idx+1], _signs[_idx+1]);
+            }
+            _idx++;
+        }
+        while (_idx < _nMoves) {
+            play(_moves[_idx], _signs[_idx]);
+            _idx++;
+        }
+    }
+
     function claimEther()
         public
+        payable
     {
         int8 _sender = playerID[msg.sender];
         if (lastPlayer == _sender
