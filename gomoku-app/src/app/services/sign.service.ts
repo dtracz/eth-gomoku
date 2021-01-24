@@ -35,21 +35,7 @@ export class SignService extends AbstractContractService {
     });
   }
 
-  // sign = async function(struct, structType, account) {
-  //   console.log("Signing struct:", struct);
-  //   const code = Web3EthAbi.encodeParameter(structType, struct);
-  //   console.log("test account:", account, " code:", code);
-  //   let signature = await window.web3.eth.sign(code, account);
-  //   console.log("test sig:", signature);
-  //   signature = signature.substr(2);
-  //   const _r = '0x' + signature.slice(0, 64);
-  //   const _s = '0x' + signature.slice(64, 128);
-  //   const _v = '0x' + signature.slice(128, 130);
-  //   let v_decimal = window.web3.utils.toDecimal(_v);
-  //   if(v_decimal != 27 || v_decimal != 28) {
-  //     v_decimal += 27
-  //   }
-  //   signature = {v: v_decimal, r: _r, s: _s};
-  //   return signature;
-  // }
+  hash = function(struct, structType) {
+    return window.web3.eth.utils.keccak256(Web3EthAbi.encodeParameter(structType, struct));
+  }
 }

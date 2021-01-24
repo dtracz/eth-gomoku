@@ -27,7 +27,9 @@ const MoveType = {
     'hashPrev': 'bytes32',
     'hashGameState': 'bytes32'
   }
-}
+};
+
+const zero32 = '0x0000000000000000000000000000000000000000000000000000000000000000';
 
 @Injectable({
   providedIn: 'root'
@@ -42,22 +44,26 @@ export class GameEthereumService extends AbstractContractService {
     super();
   }
 
-  async sendMove(moveIndexes: [number, number]) {
+  async sendMove(moveIndexes: [number, number], mvIdx: number, myPrevHash: string, hisMove: string) {
     const account = await this.getAccount();
-    var zero32 = '0x0000000000000000000000000000000000000000000000000000000000000000';
+    const prevHash = this.makePrevHash(mvIdx, myPrevHash, hisMove);
+
     const move = {
       'gameAddress': this.gameAddress,
-      'mvIdx': 1,
+      'mvIdx': mvIdx,
       'code': `(${moveIndexes[0]},${moveIndexes[1]})`,
-      'hashPrev': zero32,
+      'hashPrev': prevHash,
       'hashGameState': zero32
     };
+
     const signature = await this.signService.sign(move, MoveType, account);
     console.log("SIGNATURE:", signature);
     this.sendToBc(move, signature, account).then(status => {
         console.log("Move applied to bc status:", status);
       })
     ;
+    const myHash = this.signService.hash(move, MoveType);
+    return myHash;
   }
 
   sendToBc(move: any, signature: string, account: string): Promise<any> {
@@ -87,6 +93,20 @@ export class GameEthereumService extends AbstractContractService {
     });
   }
 
+  makePrevHash(mvIdx: number, myPrevHash: string, hisMove: string) {
+    if (mvIdx == 1) {
+      return zero32;
+    }
+    const prevMove = {
+      'gameAddress': this.gameAddress,
+      'mvIdx': mvIdx-1,
+      'code': hisMove,
+      'hashPrev': myPrevHash,
+      'hashGameState': zero32
+    };
+    return this.signService.hash(prevMove, MoveType);
+  }
+
   proposeDraw(playerName: string, gameAddress: string) {
     this.getAccount();
     const gomokuContract = contract(contractPath);
@@ -111,20 +131,16 @@ export class GameEthereumService extends AbstractContractService {
     });
   }
 
-  // games.eventGameInitialized = function (err, data) {
-  //   console.log('eventGameInitialized', err, data);
-  //   if (err) {
-  //     console.log('error occured', err);
-  //   } else {
-  //     let game = games.add(data.args);
-  //     games.openGames.push(game.gameId);
+  // eventGameJoined(err, data) {
+  //   console.log("Someone joined data:", data);
+  //   //enable board
+  // };
   //
-  //     if (web3.eth.accounts.indexOf(game.self.accountId) !== -1) {
-  //       $rootScope.$broadcast('message',
-  //         'Your game has successfully been created and has the id ' + game.gameId,
-  //         'success', 'startgame');
-  //       $rootScope.$apply();
-  //     }
-  //   }
+  // eventMovePlayed(err, data) {
+  //   console.log("Someone made a move:", data);
+  //   //enable board
+  //   const args = status['logs'][0]['args'];
+  //   console.log("received args:", args);
+  //   const hisMove = args.move;
   // };
 }

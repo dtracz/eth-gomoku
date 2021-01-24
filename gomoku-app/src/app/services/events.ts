@@ -6,5 +6,7 @@ export const eventGameJoined = function (err, data) {
 export const eventMovePlayed = function (err, data) {
   console.log("Someone made a move:", data);
   //enable board
-  //make hash of received move
+  const args = status['logs'][0]['args'];
+  console.log("received args:", args);
+  //TODO pass args.move to gameComponents.hisMove
 };

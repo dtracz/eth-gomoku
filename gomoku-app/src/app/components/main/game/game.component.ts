@@ -13,12 +13,18 @@ export class GameComponent implements OnInit {
   readonly fieldStates: FieldState[][];
   // move as typescript tuple [x,y]
   private currentMove: [number, number];
+  private myLastHash: string;
+  private mvIdx: number;
+  private hisMove: string;
 
   constructor(public gameService: GameEthereumService) {
     this.fieldStates = new Array(GOMOKU_SIZE);
     for (let i = 0; i < GOMOKU_SIZE; i++) {
       this.fieldStates[i] = new Array(GOMOKU_SIZE).fill(0);
     }
+    this.myLastHash = '0x0000000000000000000000000000000000000000000000000000000000000000';
+    this.mvIdx = 1;
+    this.hisMove = '';
   }
 
   ngOnInit(): void {
@@ -37,6 +43,9 @@ export class GameComponent implements OnInit {
 
   sendMove() {
     // send move with the service, I'm not sure if we should store moveIndex here or in service, if here we could possibly show it in html component
-    this.gameService.sendMove(this.currentMove);
+    this.gameService.sendMove(this.currentMove, this.mvIdx, this.myLastHash, this.hisMove).then(myHash => {
+      this.myLastHash = myHash;
+      this.mvIdx += 2;
+    });
   }
 }
