@@ -7,4 +7,5 @@ export interface Message {
   move: [number, number];
   moveStruct: Move;
   playerColour: FieldColour;
+  signature: any;
 }

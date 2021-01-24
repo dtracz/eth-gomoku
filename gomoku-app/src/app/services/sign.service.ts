@@ -32,7 +32,7 @@ export class SignService extends AbstractContractService {
     });
   }
 
-  hash = function(struct, structType) {
+  hash = (struct, structType) => {
     return window.web3.eth.utils.keccak256(Web3EthAbi.encodeParameter(structType, struct));
   }
 }
