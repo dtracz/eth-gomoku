@@ -18,12 +18,11 @@ export class AccountInfoComponent implements OnInit {
   user: { address, transferAddress, balance, amount, remarks };
 
   getAccountAndBalance = () => {
-    const that = this;
     this.accountService.getUserBalance().then((retAccount: any) => {
-      that.user.address = retAccount.account;
-      that.user.balance = retAccount.balance;
-      console.log('transfer.components :: getAccountAndBalance :: that.user');
-      console.log(that.user);
+      this.user.address = retAccount.account;
+      this.user.balance = retAccount.balance;
+      console.log('transfer.components :: getAccountAndBalance :: this.user');
+      console.log(this.user);
     }).catch(error => {
       console.log(error);
     });

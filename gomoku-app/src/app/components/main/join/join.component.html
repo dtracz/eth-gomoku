@@ -1,1 +1,21 @@
-<p>join works!</p>
+<form [formGroup]="form" (ngSubmit)="submitForm()">
+  <mat-form-field>
+    <mat-label>Player name:</mat-label>
+    <input matInput placeholder="Player name" type="text" name="playerName" formControlName="playerName" required>
+    <mat-error *ngFor="let validation of validationMessages.playerName">
+      <mat-error
+        *ngIf="form.get('playerName').hasError(validation.type) && (form.get('playerName').dirty || form.get('playerName').touched)">{{validation.message}}</mat-error>
+    </mat-error>
+  </mat-form-field>
+  <br/>
+  <mat-form-field>
+    <mat-label>Game address:</mat-label>
+    <input matInput placeholder="Game address" type="text" name="gameAddress" formControlName="gameAddress" required>
+    <mat-error *ngFor="let validation of validationMessages.gameAddress">
+      <mat-error
+        *ngIf="form.get('gameAddress').hasError(validation.type) && (form.get('gameAddress').dirty || form.get('gameAddress').touched)">{{validation.message}}</mat-error>
+    </mat-error>
+  </mat-form-field>
+  <br/>
+  <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid">Join game</button>
+</form>
