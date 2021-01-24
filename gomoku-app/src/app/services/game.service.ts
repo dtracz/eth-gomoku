@@ -6,6 +6,7 @@ import {MessageType} from '../utils/message-type';
 import {Message} from '../utils/message';
 
 const GOMOKU_SIZE = 19;
+const ZERO_32 = '0x0000000000000000000000000000000000000000000000000000000000000000';
 
 @Injectable({
   providedIn: 'root'
@@ -15,16 +16,22 @@ export class GameService {
   private readonly channel: BroadcastChannel;
   readonly fieldStates: FieldColour[][];
   readonly moves: Move[];
-
-  currentMove: [number, number];
-  moveIdx: number;
   playerColour: FieldColour;
   playerName: string;
   gameAddress: string;
 
+  // game move state
+  currentMove: [number, number];
+  moveIdx: number;
+  hashPrev = ZERO_32;
+  hashGameState = ZERO_32;
+
+  // game state
+  finished = false;
   turn = false;
   gameInit = false;
   loaded = false;
+  canProposeDraw = true;
 
   constructor(private gameEthereumService: GameEthereumService) {
     this.moves = [];
@@ -50,6 +57,14 @@ export class GameService {
         }
         case MessageType.DRAW: {
           this.drawMessageHandler(message);
+          break;
+        }
+        case MessageType.DRAW_AGREE: {
+          this.finished = true;
+          break;
+        }
+        case MessageType.DRAW_REJECT: {
+          break;
         }
       }
     });
@@ -59,21 +74,34 @@ export class GameService {
     const move = message.move;
     const field = this.fieldStates[move[0]][move[1]];
     if (field === FieldColour.Empty) {
-      if (this.playerColour === FieldColour.White) {
-        this.fieldStates[move[0]][move[1]] = FieldColour.Black;
-      } else {
-        this.fieldStates[move[0]][move[1]] = FieldColour.White;
-      }
+      this.fieldStates[move[0]][move[1]] = message.playerColour;
       this.turn = !this.turn;
       this.moveIdx += 2;
     }
+    this.moves.push(message.moveStruct);
+    this.canProposeDraw = true;
   }
 
   private drawMessageHandler(message: Message): void {
+    if (confirm('Do you agree to draw?')) {
+      this.gameEthereumService.proposeDraw();
+      this.finished = true;
+      this.channel.postMessage({
+        type: MessageType.DRAW_AGREE
+      });
+    } else {
+      this.channel.postMessage({
+        type: MessageType.DRAW_REJECT
+      });
+    }
+  }
+
+  private checkWin(): void {
 
   }
 
   sendLoaded(): void {
+    this.loaded = true;
     this.channel.postMessage({
       type: MessageType.LOAD
     });
@@ -101,8 +129,8 @@ export class GameService {
         gameAddress: this.gameAddress,
         mvIdx: this.moveIdx,
         code: `(${this.currentMove[0]},${this.currentMove[1]})`,
-        hashPrev: undefined,
-        hashGameState: undefined
+        hashPrev: this.hashPrev,
+        hashGameState: this.hashGameState
       },
       playerColour: this.playerColour,
     });
@@ -116,6 +144,7 @@ export class GameService {
       moveStruct: null,
       playerColour: this.playerColour
     });
+    this.canProposeDraw = false;
   }
 
   sendMovesToChain(): void {

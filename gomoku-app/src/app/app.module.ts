@@ -20,6 +20,7 @@ import {StartComponent} from './components/main/start/start.component';
 import {MatToolbarModule} from '@angular/material/toolbar';
 import {AccountInfoComponent} from './components/account-info/account-info.component';
 import {FlexLayoutModule} from '@angular/flex-layout';
+import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 
 @NgModule({
   declarations: [
@@ -42,9 +43,10 @@ import {FlexLayoutModule} from '@angular/flex-layout';
     MatDatepickerModule,
     MatCheckboxModule,
     MatNativeDateModule,
+    MatToolbarModule,
+    MatProgressSpinnerModule,
     FormsModule,
     ReactiveFormsModule,
-    MatToolbarModule,
     FlexLayoutModule
   ],
   providers: [],

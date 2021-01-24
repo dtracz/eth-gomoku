@@ -52,7 +52,6 @@ export class JoinComponent implements OnInit {
       this.gameService.moveIdx = 2;
       this.gameService.turn = false;
       this.gameService.gameInit = true;
-      this.gameService.loaded = true;
       this.gameService.sendLoaded();
 
       this.router.navigate(['/game'])

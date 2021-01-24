@@ -5,8 +5,6 @@
       User name: {{gameService.playerName}}
       <br/>
       Game address: {{gameService.gameAddress}}
-      <br/>
-      Your turn: {{gameService.turn}}
     </div>
     <br/>
     <br/>
@@ -16,6 +14,7 @@
   </div>
 
   <div class="game-container">
+    <b *ngIf="gameService.turn">Your turn!</b>
     <div class="board" *ngIf="gameService.fieldStates">
       <div *ngFor="let row of gameService.fieldStates; let i = index" class="board-row">
         <div *ngFor="let field of row; let j = index" class="game-field">
@@ -26,8 +25,10 @@
       </div>
     </div>
     <br/>
-    <button mat-raised-button color="primary" type="button" [disabled]="!gameService.turn || gameService.currentMove == undefined" (click)="sendMove()">Send move</button>
-    <button mat-raised-button color="primary" type="button" (click)="proposeDraw()">Propose draw</button>
+    <button mat-raised-button style="margin-right: 10px" color="primary" type="button"
+            [disabled]="!gameService.turn || gameService.currentMove == undefined" (click)="sendMove()">Send move
+    </button>
+    <button mat-raised-button color="primary" type="button" [disabled]="gameService.canProposeDraw" (click)="proposeDraw()">Propose draw</button>
   </div>
 </ng-container>
 
@@ -36,5 +37,12 @@
 </ng-container>
 
 <ng-container *ngIf="gameService.gameInit && !gameService.loaded">
-  Wait until second player join.
+  <div>
+    <p>Wait until second player join.</p>
+    <mat-spinner></mat-spinner>
+  </div>
+</ng-container>
+
+<ng-container *ngIf="gameService.finished">
+
 </ng-container>

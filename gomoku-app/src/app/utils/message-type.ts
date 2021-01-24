@@ -1,5 +1,8 @@
 export enum MessageType {
   LOAD,
   MOVE,
-  DRAW
+  DRAW,
+  DRAW_AGREE,
+  DRAW_REJECT,
+  WIN
 }

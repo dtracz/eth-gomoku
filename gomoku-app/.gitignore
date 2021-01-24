@@ -46,4 +46,4 @@ testem.log
 Thumbs.db
 
 # package-lock.json is output of npm install
-package-lock.json
+./package-lock.json

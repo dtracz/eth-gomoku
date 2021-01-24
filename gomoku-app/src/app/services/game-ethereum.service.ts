@@ -1,6 +1,5 @@
 import {AbstractContractService} from './abstract.contract.service';
 import {Injectable} from '@angular/core';
-import {FieldColour} from '../utils/field-colour';
 import {Move} from '../utils/move';
 import {SignService} from './sign.service';
 
@@ -29,7 +28,6 @@ export class GameEthereumService extends AbstractContractService {
 
   gameAddress: string;
   playerName: string;
-  playerColour: FieldColour;
 
   constructor(private signService: SignService) {
     super();
@@ -84,15 +82,6 @@ export class GameEthereumService extends AbstractContractService {
 
   }
 
-  proposeDraw(playerName: string): void {
-    this.getAccount()
-      .catch(err => alert(err));
-    const gomokuContract = contract(contractPath);
-    gomokuContract.setProvider(this.web3);
-    gomokuContract.deployed().then(instance => {
-      instance.joinGame(playerName, {
-        from: this.account
-      });
-    });
+  proposeDraw(): void {
   }
 }
