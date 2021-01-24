@@ -1,9 +1,10 @@
 import {Injectable} from '@angular/core';
 import {GameEthereumService} from './game-ethereum.service';
 import {FieldColour} from '../utils/field-colour';
-import {Move} from '../utils/move';
+import {Move, MoveType} from '../utils/move';
 import {MessageType} from '../utils/message-type';
 import {Message} from '../utils/message';
+import {SignService} from "./sign.service";
 
 const GOMOKU_SIZE = 19;
 const ZERO_32 = '0x0000000000000000000000000000000000000000000000000000000000000000';
@@ -34,7 +35,7 @@ export class GameService {
   canProposeDraw = true;
   bidPropose = false;
 
-  constructor(private gameEthereumService: GameEthereumService) {
+  constructor(private gameEthereumService: GameEthereumService, private signService: SignService) {
     this.moves = [];
     this.fieldStates = new Array(GOMOKU_SIZE);
     for (let i = 0; i < GOMOKU_SIZE; i++) {
@@ -80,6 +81,7 @@ export class GameService {
       this.turn = !this.turn;
       this.moveIdx += 2;
     }
+    this.hashPrev = this.signService.hash(message.moveStruct, MoveType);
     this.moves.push(message.moveStruct);
     this.canProposeDraw = true;
   }
