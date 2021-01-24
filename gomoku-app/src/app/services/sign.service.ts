@@ -15,7 +15,7 @@ export class SignService extends AbstractContractService {
     super();
   }
 
-  sign = (struct, structType, account) => {
+  sign(struct, structType, account): any {
     console.log('Signing struct:', struct);
     const code = Web3EthAbi.encodeParameter(structType, struct);
     return window.web3.eth.personal.sign(code, account).then((signature) => {
@@ -32,7 +32,7 @@ export class SignService extends AbstractContractService {
     });
   }
 
-  hash = (struct, structType) => {
-    return window.web3.eth.utils.keccak256(Web3EthAbi.encodeParameter(structType, struct));
+  hash(struct, structType): any {
+    return window.web3.utils.keccak256(Web3EthAbi.encodeParameter(structType, struct));
   }
 }

@@ -39,7 +39,6 @@ export class GameService {
   constructor(private gameEthereumService: GameEthereumService, private signService: SignService) {
     this.moves = [];
     this.signatures = [];
-    this.signatures.push(ZERO_32);
     this.fieldStates = new Array(GOMOKU_SIZE);
     for (let i = 0; i < GOMOKU_SIZE; i++) {
       this.fieldStates[i] = new Array(GOMOKU_SIZE).fill(FieldColour.Empty);
