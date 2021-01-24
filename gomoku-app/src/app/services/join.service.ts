@@ -1,6 +1,6 @@
 import {AbstractContractService} from './abstract.contract.service';
 import {Injectable} from '@angular/core';
-import {eventGameJoined, eventMovePlayed} from './events';
+import {eventMovePlayed} from './events';
 
 declare let require: any;
 const contractPath = require('../../../../build/contracts/Gomoku.json');

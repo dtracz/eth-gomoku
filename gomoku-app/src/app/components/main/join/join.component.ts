@@ -40,7 +40,7 @@ export class JoinComponent implements OnInit {
 
   submitForm(): void {
     if (this.form.invalid) {
-      alert('INVALID FORM');
+      alert('Invalid form');
     } else {
       const playerName = this.form.value.playerName;
       this.joinService.joinGame(playerName).then(status => {

@@ -11,6 +11,17 @@
     <div>
       <button mat-raised-button color="primary" type="button" (click)="sendMovesToChain()">Send moves to chain</button>
     </div>
+    <br/>
+    <div>
+      <form [formGroup]="form" (ngSubmit)="bid()">
+        <mat-form-field>
+          <mat-label>Bid amount:</mat-label>
+          <input matInput placeholder="Bid amount" name="bidAmount" type="number" formControlName="bidAmount" required>
+        </mat-form-field>
+      </form>
+      <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid && !gameService.bidPropose">Bid
+      </button>
+    </div>
   </div>
 
   <div class="game-container">
@@ -28,7 +39,9 @@
     <button mat-raised-button style="margin-right: 10px" color="primary" type="button"
             [disabled]="!gameService.turn || gameService.currentMove == undefined" (click)="sendMove()">Send move
     </button>
-    <button mat-raised-button color="primary" type="button" [disabled]="gameService.canProposeDraw" (click)="proposeDraw()">Propose draw</button>
+    <button mat-raised-button color="primary" type="button" [disabled]="gameService.canProposeDraw"
+            (click)="proposeDraw()">Propose draw
+    </button>
   </div>
 </ng-container>
 

@@ -32,6 +32,7 @@ export class GameService {
   gameInit = false;
   loaded = false;
   canProposeDraw = true;
+  bidPropose = false;
 
   constructor(private gameEthereumService: GameEthereumService) {
     this.moves = [];
@@ -64,6 +65,7 @@ export class GameService {
           break;
         }
         case MessageType.DRAW_REJECT: {
+          alert('Draw propose rejected');
           break;
         }
       }
@@ -97,7 +99,9 @@ export class GameService {
   }
 
   private checkWin(): void {
-
+    this.channel.postMessage({
+      type: MessageType.WIN
+    });
   }
 
   sendLoaded(): void {
@@ -148,6 +152,12 @@ export class GameService {
   }
 
   sendMovesToChain(): void {
-    this.gameEthereumService.sendMoves(this.moves);
+    this.gameEthereumService.sendMovesToChain(this.moves);
+    this.bidPropose = false;
+  }
+
+  bid(bidAmount: number): void {
+    this.gameEthereumService.bid(bidAmount);
+    this.bidPropose = true;
   }
 }

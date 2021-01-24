@@ -7,10 +7,6 @@ declare let require: any;
 const contractPath = require('../../../../build/contracts/Gomoku.json');
 const contract = require('@truffle/contract');
 
-class Move {
-  address: string;
-
-}
 const MoveType = {
   Move : {
     gameAddress: 'string',
@@ -28,6 +24,7 @@ export class GameEthereumService extends AbstractContractService {
 
   gameAddress: string;
   playerName: string;
+  private bidAmount = 0;
 
   constructor(private signService: SignService) {
     super();
@@ -52,6 +49,7 @@ export class GameEthereumService extends AbstractContractService {
   }
 
   sendToBc(move: any, signature: string, account: string): Promise<any> {
+    this.bidAmount = 0;
     console.log('Sending move to blockchain move:', move, ' signature:', signature, ' account:', account);
     return new Promise((resolve, reject) => {
       const gomokuContract = contract(contractPath);
@@ -78,10 +76,17 @@ export class GameEthereumService extends AbstractContractService {
     });
   }
 
-  sendMoves(moves: Move[]): void {
-
+  sendMovesToChain(moves: Move[]): void {
+    this.getAccount()
+      .catch(err => alert(err));
   }
 
   proposeDraw(): void {
+    this.getAccount()
+      .catch(err => alert(err));
+  }
+
+  bid(bidAmount: number): void {
+    this.bidAmount = bidAmount;
   }
 }

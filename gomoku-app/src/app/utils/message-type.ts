@@ -4,5 +4,6 @@ export enum MessageType {
   DRAW,
   DRAW_AGREE,
   DRAW_REJECT,
-  WIN
+  WIN,
+  BID
 }

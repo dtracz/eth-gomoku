@@ -1,10 +1,7 @@
-export const eventGameJoined = function (err, data) {
-  console.log("Someone joined data:", data);
-  //enable board
+export const eventGameJoined = (err, data) => {
+  console.log('Someone joined data:', data);
 };
 
-export const eventMovePlayed = function (err, data) {
-  console.log("Someone made a move:", data);
-  //enable board
-  //make hash of received move
+export const eventMovePlayed = (err, data) => {
+  console.log('Someone made a move:', data);
 };
