@@ -145,8 +145,8 @@ contract Gomoku {
     function proposeDraw(int8 _player, Signature memory _sign)
         public
     {
-        bytes32 hash = keccak256(abi.encode("draw", lastMove));
-        require(ecrecover(hash, _sign.v, _sign.r, _sign.s) == playerAdd[uint8(_player)]);
+        address _proposerAdd = sigRecover(abi.encode("draw", lastMove), _sign);
+        require(_proposerAdd == playerAdd[uint8(_player)]);
         // set draw proposal or accept opponent's one
         if (drawProposal == -1)
             drawProposal = _player;
