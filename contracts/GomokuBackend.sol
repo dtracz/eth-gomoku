@@ -125,7 +125,7 @@ contract GomokuBackend {
                 while (0 <= x && x < 19 &&
                        0 <= y && y < 19 &&
                        gameState.board[uint(x)][uint(y)] == _player) {
-                    _sameInDir[uint(x+1)][uint(y+1)]++;
+                    _sameInDir[uint(i+1)][uint(j+1)]++;
                     x += i;
                     y += j;
                 }

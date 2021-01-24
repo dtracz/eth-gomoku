@@ -65,10 +65,11 @@ contract('Gomoku', (accounts) => {
             'mvIdx': 1,
             'code': "(10,10)",
             'hashPrev': ZERO_32,
-            'hashGameState': ZERO_32 
+            'hashGameState': ZERO_32
         }
         signature = sign(move, MoveType, accounts[0])
-        const moveResult = await this.gomoku.play(move, signature, {from: accounts[0]})
+        const moveResult = await this.gomoku.play(move, signature, {from: accounts[0],
+                                                                    value: 1})
         const ev = moveResult.logs[0].args
         assert.equal(ev.move, "(10,10)")
         assert.equal(ev.player.toNumber(), 0)
@@ -81,7 +82,7 @@ contract('Gomoku', (accounts) => {
             'mvIdx': 1,
             'code': "(10,10)",
             'hashPrev': ZERO_32,
-            'hashGameState': ZERO_32 
+            'hashGameState': ZERO_32
         }
         const hashFirst = Web3Utils.keccak256(Web3EthAbi.encodeParameter(MoveType, first));
         const second = {
@@ -89,10 +90,11 @@ contract('Gomoku', (accounts) => {
             'mvIdx': 2,
             'code': "(10,11)",
             'hashPrev': hashFirst,
-            'hashGameState': ZERO_32 
+            'hashGameState': ZERO_32
         }
         signature = sign(second, MoveType, accounts[1])
-        const moveResult = await this.gomoku.play(second, signature, {from: accounts[1]})
+        const moveResult = await this.gomoku.play(second, signature, {from: accounts[1],
+                                                                      value: 1})
         const ev = moveResult.logs[0].args
         assert.equal(ev.move, "(10,11)")
         assert.equal(ev.player.toNumber(), 1)
@@ -105,7 +107,7 @@ contract('Gomoku', (accounts) => {
             'mvIdx': 1,
             'code': "(10,10)",
             'hashPrev': ZERO_32,
-            'hashGameState': ZERO_32 
+            'hashGameState': ZERO_32
         }
         const hashFirst = Web3Utils.keccak256(Web3EthAbi.encodeParameter(MoveType, first));
         const second = {
@@ -113,7 +115,7 @@ contract('Gomoku', (accounts) => {
             'mvIdx': 2,
             'code': "(10,11)",
             'hashPrev': hashFirst,
-            'hashGameState': ZERO_32 
+            'hashGameState': ZERO_32
         }
         const hashSecond = Web3Utils.keccak256(Web3EthAbi.encodeParameter(MoveType, second));
         const third = {
@@ -121,15 +123,69 @@ contract('Gomoku', (accounts) => {
             'mvIdx': 3,
             'code': "(11,11)",
             'hashPrev': hashSecond,
-            'hashGameState': ZERO_32 
+            'hashGameState': ZERO_32
         }
         signature = sign(third, MoveType, accounts[0])
         const moveResult = await this.gomoku.play(third, signature, {from: accounts[1]})
         const ev = moveResult.logs[0].args
         assert.equal(ev.move, "(11,11)")
         assert.equal(ev.player.toNumber(), 0)
-        // const board = await this.gomoku.getApprovedState()
-        // console.log(board)
     })
+
+    it('rest of the game', async () => {
+        const gameAddr = await this.gomoku.selfAdd()
+        const first = {
+            'gameAddress': gameAddr,
+            'mvIdx': 1,
+            'code': "(10,10)",
+            'hashPrev': ZERO_32,
+            'hashGameState': ZERO_32
+        }
+        const hashFirst = Web3Utils.keccak256(Web3EthAbi.encodeParameter(MoveType, first))
+        const second = {
+            'gameAddress': gameAddr,
+            'mvIdx': 2,
+            'code': "(10,11)",
+            'hashPrev': hashFirst,
+            'hashGameState': ZERO_32
+        }
+        const hashSecond = Web3Utils.keccak256(Web3EthAbi.encodeParameter(MoveType, second))
+
+        var prev = {
+            'gameAddress': gameAddr,
+            'mvIdx': 3,
+            'code': "(11,11)",
+            'hashPrev': hashSecond,
+            'hashGameState': ZERO_32
+        }
+        const moves = ["(11,10)",
+              "(9,9)", "(10,9)",
+            "(12,12)", "(13,13)",
+              "(8,8)", ""]
+        for (i = 4; i < 11; i++) {
+            const hashPrev = Web3Utils.keccak256(Web3EthAbi.encodeParameter(MoveType, prev))
+            var move = {
+                'gameAddress': gameAddr,
+                'mvIdx': i,
+                'code': moves[i-4],
+                'hashPrev': hashPrev,
+                'hashGameState': ZERO_32
+            }
+            signature = sign(move, MoveType, accounts[(i+1)%2])
+            const res = await this.gomoku.play(move, signature, {from: accounts[(i+1)%2]})
+            prev = move
+            if (i == 10) {
+                const ev = res.logs[0].args
+                assert.equal(ev.winnerID.toNumber(), 0)
+                assert.equal(ev.winnerName, "player_0")
+                assert.equal(ev.reward.toNumber(), 2)
+            }
+        }
+    })
+
+    // it('show board', async () => {
+    //     const board = await this.gomoku.getApprovedState()
+    //     console.log(board)
+    // })
 })
 

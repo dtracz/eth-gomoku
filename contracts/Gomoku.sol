@@ -39,6 +39,7 @@ contract Gomoku {
                      address indexed player1, string player1Name,
                      int8 firstPlayer, uint coins);
     event MovePlayed(string move, int8 player);
+    event GameFinished(int8 winnerID, string winnerName, uint reward);
 
 
     function uint2bytes(uint16 i)
@@ -159,7 +160,7 @@ contract Gomoku {
         public
         payable
         metadataVerifivation(_move, _sign)
-        // // WHAT IF I DON'T WANT TO APPROVE LAST?
+        // WHAT IF I DON'T WANT TO APPROVE LAST?
         approveLast(_move.mvIdx, _move.hashPrev)
         surrenderHandler(_move.code, playerID[msg.sender])
         stakeVerifier()
@@ -190,6 +191,10 @@ contract Gomoku {
         for (uint8 i = 0; i < 2; i++)
             if (balance[i] > 0)
                 playerAdd[i].transfer(balance[i]);
+        if (_winner < 2)
+            emit GameFinished(_winner, playerName[uint8(_winner)], balance[uint8(_winner)]);
+        else
+            emit GameFinished(_winner, "draw", 0);
     }
 
     /**
