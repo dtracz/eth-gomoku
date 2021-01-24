@@ -21,7 +21,7 @@ class Move {
 }
 const MoveType = {
   'Move' : {
-    'gameAddress': 'address',
+    'gameAddress': 'string',
     'mvIdx': 'uint32',
     'code': 'string',
     'hashPrev': 'bytes32',
@@ -44,10 +44,7 @@ export class GameEthereumService extends AbstractContractService {
 
   sendMove(moveIndexes: [number, number]) {
     this.getAccount().then(r => {
-      const gomokuContract = contract(contractPath);
-      gomokuContract.setProvider(this.web3);
-
-      var zero32 = '0x0000000000000000000000000000000000000000000000000000000000000001'
+      var zero32 = '0x0000000000000000000000000000000000000000000000000000000000000000'
       const move = {
         'gameAddress': this.gameAddress,
         'mvIdx': 1,
@@ -55,17 +52,34 @@ export class GameEthereumService extends AbstractContractService {
         'hashPrev': zero32,
         'hashGameState': zero32
       };
-
       const signature = this.signService.sign(move, MoveType, this.account);
       console.log("Signed move sg:", signature);
-
+      this.sendToBc(move, signature).then(status => {
+        console.log("Move applied to bc status:", status);
+      })
+    });
+  }
+  sendToBc(move: any, signature: string): Promise<any> {
+    console.log("send to bc")
+    return new Promise((resolve, reject) => {
+      const gomokuContract = contract(contractPath);
+      gomokuContract.setProvider(this.web3);
       gomokuContract.deployed().then(instance => {
-        //todo: fill with correct values
         instance.play(move, signature,
           {
             from: this.account
           });
-      });
+      }).then(result => {
+        if (result) {
+          const res = resolve(result);
+          console.log("halko res:", res);
+          return res;
+        }
+      }).catch(error => {
+          if (error)
+            return reject(error);
+        }
+      );
     });
   }
 
@@ -92,4 +106,21 @@ export class GameEthereumService extends AbstractContractService {
         });
     });
   }
+
+  // games.eventGameInitialized = function (err, data) {
+  //   console.log('eventGameInitialized', err, data);
+  //   if (err) {
+  //     console.log('error occured', err);
+  //   } else {
+  //     let game = games.add(data.args);
+  //     games.openGames.push(game.gameId);
+  //
+  //     if (web3.eth.accounts.indexOf(game.self.accountId) !== -1) {
+  //       $rootScope.$broadcast('message',
+  //         'Your game has successfully been created and has the id ' + game.gameId,
+  //         'success', 'startgame');
+  //       $rootScope.$apply();
+  //     }
+  //   }
+  // };
 }
