@@ -1,6 +1,9 @@
 import {Injectable} from '@angular/core';
 import {GameEthereumService} from './game-ethereum.service';
-import {FieldState} from '../utils/field-state';
+import {FieldColour} from '../utils/field-colour';
+import {Move} from '../utils/move';
+import {MessageType} from '../utils/message-type';
+import {Message} from '../utils/message';
 
 const GOMOKU_SIZE = 19;
 
@@ -10,46 +13,79 @@ const GOMOKU_SIZE = 19;
 export class GameService {
 
   private readonly channel: BroadcastChannel;
-  private currentMove: [number, number];
-  readonly fieldStates: FieldState[][];
+  readonly fieldStates: FieldColour[][];
+  readonly moves: Move[];
 
+  currentMove: [number, number];
   moveIdx: number;
-  playerColour: FieldState;
+  playerColour: FieldColour;
   playerName: string;
   gameAddress: string;
 
   turn = false;
   gameInit = false;
+  loaded = false;
 
   constructor(private gameEthereumService: GameEthereumService) {
-
+    this.moves = [];
     this.fieldStates = new Array(GOMOKU_SIZE);
     for (let i = 0; i < GOMOKU_SIZE; i++) {
-      this.fieldStates[i] = new Array(GOMOKU_SIZE).fill(FieldState.Free);
+      this.fieldStates[i] = new Array(GOMOKU_SIZE).fill(FieldColour.Empty);
     }
-
     this.channel = new BroadcastChannel('gomoku');
     this.initChannelListeners();
   }
 
   private initChannelListeners(): void {
     this.channel.addEventListener('message', event => {
-      const field = this.fieldStates[event.data[0]][event.data[1]];
-      if (field === FieldState.Free) {
-        if (this.playerColour === FieldState.White) {
-          this.fieldStates[event.data[0]][event.data[1]] = FieldState.Black;
-        } else {
-          this.fieldStates[event.data[0]][event.data[1]] = FieldState.White;
+      const message = event.data;
+      switch (message.type) {
+        case MessageType.LOAD: {
+          this.loaded = true;
+          break;
         }
-        this.turn = !this.turn;
-        this.moveIdx += 2;
+        case MessageType.MOVE: {
+          this.moveMessageHandler(message);
+          break;
+        }
+        case MessageType.DRAW: {
+          this.drawMessageHandler(message);
+        }
       }
     });
   }
 
+  private moveMessageHandler(message: Message): void {
+    const move = message.move;
+    const field = this.fieldStates[move[0]][move[1]];
+    if (field === FieldColour.Empty) {
+      if (this.playerColour === FieldColour.White) {
+        this.fieldStates[move[0]][move[1]] = FieldColour.Black;
+      } else {
+        this.fieldStates[move[0]][move[1]] = FieldColour.White;
+      }
+      this.turn = !this.turn;
+      this.moveIdx += 2;
+    }
+  }
+
+  private drawMessageHandler(message: Message): void {
+
+  }
+
+  sendLoaded(): void {
+    this.channel.postMessage({
+      type: MessageType.LOAD
+    });
+  }
+
   setColour(i: number, j: number): void {
+    if (!!this.currentMove && this.currentMove[0] !== i && this.currentMove[1] !== j && this.fieldStates[i][j] !== FieldColour.Empty) {
+      alert('this field is already chosen');
+      return;
+    }
     if (!!this.currentMove) {
-      this.fieldStates[this.currentMove[0]][this.currentMove[1]] = FieldState.Free;
+      this.fieldStates[this.currentMove[0]][this.currentMove[1]] = FieldColour.Empty;
     }
     this.fieldStates[i][j] = this.playerColour;
     this.currentMove = [i, j];
@@ -58,15 +94,31 @@ export class GameService {
   sendMove(): void {
     this.turn = !this.turn;
     this.fieldStates[this.currentMove[0]][this.currentMove[1]] = this.playerColour;
-    this.channel.postMessage(this.currentMove);
+    this.channel.postMessage({
+      type: MessageType.MOVE,
+      move: this.currentMove,
+      moveStruct: {
+        gameAddress: this.gameAddress,
+        mvIdx: this.moveIdx,
+        code: `(${this.currentMove[0]},${this.currentMove[1]})`,
+        hashPrev: undefined,
+        hashGameState: undefined
+      },
+      playerColour: this.playerColour,
+    });
     this.currentMove = undefined;
   }
 
   proposeDraw(): void {
-    this.channel.postMessage('');
+    this.channel.postMessage({
+      type: MessageType.DRAW,
+      move: undefined,
+      moveStruct: null,
+      playerColour: this.playerColour
+    });
   }
 
   sendMovesToChain(): void {
-
+    this.gameEthereumService.sendMoves(this.moves);
   }
 }

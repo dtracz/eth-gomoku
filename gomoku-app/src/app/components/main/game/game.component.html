@@ -1,10 +1,12 @@
-<ng-container *ngIf="gameService.gameInit">
+<ng-container *ngIf="gameService.gameInit && gameService.loaded">
   <div class="control-container">
     <div>
       <br/>
       User name: {{gameService.playerName}}
       <br/>
       Game address: {{gameService.gameAddress}}
+      <br/>
+      Your turn: {{gameService.turn}}
     </div>
     <br/>
     <br/>
@@ -24,11 +26,15 @@
       </div>
     </div>
     <br/>
-    <button mat-raised-button color="primary" type="button" [disabled]="!gameService.turn" (click)="sendMove()">Send move</button>
+    <button mat-raised-button color="primary" type="button" [disabled]="!gameService.turn || gameService.currentMove == undefined" (click)="sendMove()">Send move</button>
     <button mat-raised-button color="primary" type="button" (click)="proposeDraw()">Propose draw</button>
   </div>
 </ng-container>
 
 <ng-container *ngIf="!gameService.gameInit">
   Not connected to any game.
+</ng-container>
+
+<ng-container *ngIf="gameService.gameInit && !gameService.loaded">
+  Wait until second player join.
 </ng-container>

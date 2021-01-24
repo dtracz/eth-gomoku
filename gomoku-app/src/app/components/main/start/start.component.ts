@@ -2,7 +2,7 @@ import {Component, OnInit} from '@angular/core';
 import {FormBuilder, FormControl, FormGroup, Validators} from '@angular/forms';
 import {StartService} from '../../../services/start.service';
 import {Router} from '@angular/router';
-import {FieldState} from '../../../utils/field-state';
+import {FieldColour} from '../../../utils/field-colour';
 import {GameService} from '../../../services/game.service';
 
 @Component({
@@ -47,7 +47,7 @@ export class StartComponent implements OnInit {
         this.gameService.gameAddress = status.receipt.to;
       }).catch(err => alert(err));
 
-      this.gameService.playerColour = FieldState.White;
+      this.gameService.playerColour = FieldColour.White;
       this.gameService.playerName = playerName;
       this.gameService.moveIdx = 1;
       this.gameService.turn = true;

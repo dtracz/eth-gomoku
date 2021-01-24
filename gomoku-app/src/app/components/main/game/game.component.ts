@@ -27,6 +27,6 @@ export class GameComponent implements OnInit {
   }
 
   sendMovesToChain(): void {
-
+    this.gameService.sendMovesToChain();
   }
 }

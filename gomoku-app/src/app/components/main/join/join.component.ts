@@ -2,7 +2,7 @@ import {Component, OnInit} from '@angular/core';
 import {JoinService} from '../../../services/join.service';
 import {FormBuilder, FormControl, FormGroup, Validators} from '@angular/forms';
 import {Router} from '@angular/router';
-import {FieldState} from '../../../utils/field-state';
+import {FieldColour} from '../../../utils/field-colour';
 import {GameService} from '../../../services/game.service';
 
 @Component({
@@ -19,9 +19,6 @@ export class JoinComponent implements OnInit {
     playerName: [
       {type: 'required', message: 'Player name is required.'},
       {type: 'minLength', message: 'Player name cannot be empty.'}
-    ],
-    gameAddress: [
-      {type: 'required', message: 'Game address is required.'}
     ]
   };
 
@@ -50,11 +47,13 @@ export class JoinComponent implements OnInit {
         this.gameService.gameAddress = status.receipt.to;
       }).catch(err => alert(err));
 
-      this.gameService.playerColour = FieldState.Black;
+      this.gameService.playerColour = FieldColour.Black;
       this.gameService.playerName = playerName;
       this.gameService.moveIdx = 2;
       this.gameService.turn = false;
       this.gameService.gameInit = true;
+      this.gameService.loaded = true;
+      this.gameService.sendLoaded();
 
       this.router.navigate(['/game'])
         .catch(err => alert(err));

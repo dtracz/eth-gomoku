@@ -1,4 +1,5 @@
-enum MessageType {
+export enum MessageType {
+  LOAD,
   MOVE,
   DRAW
 }

@@ -1,6 +1,7 @@
 import {AbstractContractService} from './abstract.contract.service';
 import {Injectable} from '@angular/core';
-import {FieldState} from '../utils/field-state';
+import {FieldColour} from '../utils/field-colour';
+import {Move} from '../utils/move';
 import {SignService} from './sign.service';
 
 declare let require: any;
@@ -28,7 +29,7 @@ export class GameEthereumService extends AbstractContractService {
 
   gameAddress: string;
   playerName: string;
-  playerColour: FieldState;
+  playerColour: FieldColour;
 
   constructor(private signService: SignService) {
     super();
@@ -77,6 +78,10 @@ export class GameEthereumService extends AbstractContractService {
         }
       );
     });
+  }
+
+  sendMoves(moves: Move[]): void {
+
   }
 
   proposeDraw(playerName: string): void {
