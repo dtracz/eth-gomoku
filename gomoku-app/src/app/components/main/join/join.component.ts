@@ -41,7 +41,10 @@ export class JoinComponent implements OnInit {
       alert("INVALID FORM");
     } else {
       const playerName = this.form.value.playerName;
-      this.joinService.joinGame(playerName).then();
+      this.joinService.joinGame(playerName).then(status => {
+        this.gameEthereumService.gameAddress = status['logs'][0]['address'];
+        //TODO now unblock board for first player
+    });
       this.gameEthereumService.playerColour = FieldState.Black;
       this.gameEthereumService.playerName = playerName;
       //this.gameEthereumService.gameAddress = gameAddress;

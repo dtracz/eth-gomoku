@@ -1,5 +1,6 @@
 import {AbstractContractService} from "./abstract.contract.service";
 import {Injectable} from '@angular/core';
+import {SignService} from "./sign.service";
 
 declare let window: any;
 declare let require: any;
@@ -14,6 +15,20 @@ export enum FieldState {
   Black
 }
 
+class Move {
+  address: string;
+
+}
+const MoveType = {
+  'Move' : {
+    'gameAddress': 'string',
+    'mvIdx': 'uint32',
+    'code': 'string',
+    'hashPrev': 'bytes32',
+    'hashGameState': 'bytes32'
+  }
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -23,26 +38,52 @@ export class GameEthereumService extends AbstractContractService {
   playerName: string;
   playerColour: FieldState;
 
-  constructor() {
+  constructor(private signService: SignService) {
     super();
   }
 
-  sendMove(move: [number, number]) {
-    this.getAccount();
-    const gomokuContract = contract(contractPath);
-    gomokuContract.setProvider(this.web3);
-    gomokuContract.deployed().then(instance => {
-      //todo: fill with correct values
-      instance.play({
-          gameAddress: this.gameAddress,
-          mvIdx: null,
-          code: `(${move[0]},${move[1]})`,
-          hashPrev: null,
-          hashGameState: null
-        },
-        {
-          from: this.account
-        });
+  async sendMove(moveIndexes: [number, number]) {
+    const account = await this.getAccount();
+    var zero32 = '0x0000000000000000000000000000000000000000000000000000000000000000';
+    const move = {
+      'gameAddress': this.gameAddress,
+      'mvIdx': 1,
+      'code': `(${moveIndexes[0]},${moveIndexes[1]})`,
+      'hashPrev': zero32,
+      'hashGameState': zero32
+    };
+    const signature = await this.signService.sign(move, MoveType, account);
+    console.log("SIGNATURE:", signature);
+    this.sendToBc(move, signature, account).then(status => {
+        console.log("Move applied to bc status:", status);
+      })
+    ;
+  }
+
+  sendToBc(move: any, signature: string, account: string): Promise<any> {
+    console.log("Sending move to blockchain move:", move, " signature:", signature, " account:", account);
+    return new Promise((resolve, reject) => {
+      const gomokuContract = contract(contractPath);
+      gomokuContract.setProvider(this.web3);
+      gomokuContract.deployed().then(instance => {
+        instance.play(move, signature,
+          {
+            from: account
+          });
+      }).then(result => {
+        if (result) {
+          const res = resolve(result);
+          console.log("Sent to blockchain result:", res);
+          return res;
+        }
+        console.log("Sent to blockchain no result");
+      }).catch(error => {
+          if (error) {
+            console.log("Can't send to blockchain error:", error);
+            return reject(error);
+          }
+        }
+      );
     });
   }
 

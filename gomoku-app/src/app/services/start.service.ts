@@ -1,5 +1,6 @@
 import {AbstractContractService} from "./abstract.contract.service";
 import {Injectable} from '@angular/core';
+import {eventGameJoined, eventMovePlayed} from "./events";
 
 declare let window: any;
 declare let require: any;
@@ -23,6 +24,8 @@ export class StartService extends AbstractContractService {
       const gomokuContract = contract(contractPath);
       gomokuContract.setProvider(this.web3);
       gomokuContract.deployed().then(instance => {
+        instance.GameJoined({}, eventGameJoined);
+        instance.MovePlayed({}, eventMovePlayed);
         return instance.initGame(playerName,
           {
             from: this.account
