@@ -14,9 +14,12 @@ contract Gomoku {
     bool unapplied;
     Move public lastMove;
     int8 lastPlayer;  // who played last move
+    uint lastBlockstamp;
 
     int8 drawProposal;
     uint[2] balance;
+
+    uint32 patience = 1000;
 
     struct Move {
         address gameAddress;
@@ -171,8 +174,20 @@ contract Gomoku {
         // set this move as last (for opponent to apptoval)
         lastMove = _move;
         lastPlayer = (1 + int8(_move.mvIdx) + firstPlayer) % 2;
+        lastBlockstamp = block.number;
         unapplied = true;
         emit MovePlayed(_move.code, lastPlayer);
+    }
+
+    function claimEther()
+        public
+    {
+        int8 _sender = playerID[msg.sender];
+        if (lastPlayer == _sender
+         && lastBlockstamp != 0
+         && lastBlockstamp + patience < block.number) {
+            pay(_sender);
+        }
     }
 
     /**
