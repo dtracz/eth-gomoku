@@ -113,7 +113,7 @@ contract Gomoku {
 
     /**
      * If any move is played (even incorrect) "on top" of last one,
-     * that move becames approved and is applied
+     * that move becomes approved and is applied
      * bytes32 _hashPrev: hash of the previous move from the struct of just played.
      */
     function approveLast()
@@ -141,8 +141,8 @@ contract Gomoku {
     }
 
     /**
-     * Propose draw. Popopsal is valid till any other move is played and cannot be withdrawn.
-     * int8 _player: ID of poposing player (will be verified).
+     * Propose draw. Proposal is valid till any other move is played and cannot be withdrawn.
+     * int8 _player: ID of proposing player (will be verified).
      * bytes32 _signature: signature of the player.
      */
     function proposeDraw(int8 _player, Signature memory _sign)
@@ -160,7 +160,7 @@ contract Gomoku {
 
     /**
      * Update the game with one more move.
-     * Move memory _move: encoded move with addidional info.
+     * Move memory _move: encoded move with additional info.
      * bytes32 _signature: signature of the player.
      */
     function play(Move memory _move, Signature memory _sign)
@@ -175,7 +175,7 @@ contract Gomoku {
         require(game.isCorrect(bytes(_move.code), playerID[msg.sender]));
         // drawProposal is valid only till next move
         drawProposal = -1;
-        // set this move as last (for opponent to apptoval)
+        // set this move as last (for opponent to approval)
         lastMove = _move;
         lastPlayer = (1 + int8(_move.mvIdx) + firstPlayer) % 2;
         lastBlockstamp = block.number;
@@ -210,7 +210,7 @@ contract Gomoku {
         if (_moves[_idx].mvIdx == lastMove.mvIdx) {
            // if last move is to be replaced
             if (keccak256(abi.encode(_moves[_idx])) != keccak256(abi.encode(lastMove))) {
-                // requre longer move chain
+                // require longer move chain
                 require(_nMoves > _idx + 1);
                 replaceLast(_moves[_idx], _signs[_idx], _moves[_idx+1], _signs[_idx+1]);
             }
@@ -289,7 +289,7 @@ contract Gomoku {
     {
         // Check that this game does not have a second player yet
         require (playerAdd[1] == address(0));
-        // The same player coannot play on both sides
+        // The same player cannot play on both sides
         require (msg.sender != playerAdd[0]);
         require (msg.value >= balance[0]);
         playerAdd[1] = msg.sender;

@@ -45,7 +45,7 @@ export class JoinComponent implements OnInit {
       const playerName = this.form.value.playerName;
       this.joinService.joinGame(playerName).then(status => {
         this.gameService.gameAddress = status.receipt.to;
-      }).catch(err => alert(err));
+      }).catch(err => alert(`JoinComponent: error joining to game: ${err}`));
 
       this.gameService.playerColour = FieldColour.Black;
       this.gameService.playerName = playerName;
@@ -55,7 +55,7 @@ export class JoinComponent implements OnInit {
       this.gameService.sendLoaded();
 
       this.router.navigate(['/game'])
-        .catch(err => alert(err));
+        .catch(err => alert(`JoinComponent: error routing to game: ${err}`));
     }
   }
 }

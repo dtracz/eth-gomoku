@@ -9,7 +9,9 @@
     <br/>
     <br/>
     <div>
-      <button mat-raised-button color="primary" type="button" (click)="sendMovesToChain()">Send moves to chain</button>
+      <button mat-raised-button color="primary" type="button" (click)="sendMovesToChain()"
+              [disabled]="!gameService.turn">Send moves to chain
+      </button>
     </div>
     <br/>
     <div>
@@ -39,7 +41,8 @@
     <button mat-raised-button style="margin-right: 10px" color="primary" type="button"
             [disabled]="!gameService.turn || gameService.currentMove == undefined" (click)="sendMove()">Send move
     </button>
-    <button mat-raised-button color="primary" type="button" [disabled]="!gameService.canProposeDraw"
+    <button mat-raised-button color="primary" type="button"
+            [disabled]="!gameService.canProposeDraw && !gameService.turn"
             (click)="proposeDraw()">Propose draw
     </button>
   </div>

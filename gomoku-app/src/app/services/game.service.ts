@@ -86,13 +86,13 @@ export class GameService {
 
   private moveMessageHandler(message: Message): void {
     const move = message.move;
+    const moveStruct = message.moveStruct;
     const field = this.fieldStates[move[0]][move[1]];
     if (field === FieldColour.Empty) {
       this.fieldStates[move[0]][move[1]] = message.playerColour;
       this.turn = !this.turn;
-      this.moveIdx += 2;
-      this.hashPrev = this.signService.hash(message.moveStruct, MoveType);
-      this.moves.push(message.moveStruct);
+      this.hashPrev = this.signService.hash(moveStruct, MoveType);
+      this.moves.push(moveStruct);
       this.signatures.push(message.signature);
       this.canProposeDraw = true;
     } else {
@@ -157,9 +157,9 @@ export class GameService {
       hashPrev: this.hashPrev,
       hashGameState: this.hashGameState
     };
-
-    this.gameEthereumService.acc().then(acc => {
-      const signature = this.signService.sign(moveStruct, MoveType, acc);
+    this.moveIdx += 2;
+    this.gameEthereumService.acc().then(async acc => {
+      const signature = await this.signService.sign(moveStruct, MoveType, acc);
       this.signatures.push(signature);
       this.moves.push(moveStruct);
       this.channel.postMessage({
@@ -167,6 +167,7 @@ export class GameService {
         move: this.currentMove,
         moveStruct,
         playerColour: this.playerColour,
+        signature
       });
       this.currentMove = undefined;
     }).catch(err => {

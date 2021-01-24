@@ -23,7 +23,7 @@ export class AccountInfoComponent implements OnInit {
       this.user.address = retAccount.account;
       this.user.balance = retAccount.balance;
     }).catch(error => {
-      alert(error);
+      alert(`AccountComponent: cant get account and balance: ${error}`);
     });
   }
 

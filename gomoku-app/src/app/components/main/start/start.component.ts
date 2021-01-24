@@ -45,7 +45,7 @@ export class StartComponent implements OnInit {
 
       this.startService.startGame(playerName).then(status => {
         this.gameService.gameAddress = status.receipt.to;
-      }).catch(err => alert(err));
+      }).catch(err => alert(`StartComponent: cannot start game: ${err}`));
 
       this.gameService.playerColour = FieldColour.White;
       this.gameService.playerName = playerName;
@@ -54,7 +54,7 @@ export class StartComponent implements OnInit {
       this.gameService.gameInit = true;
 
       this.router.navigate(['/game'])
-        .catch(err => alert(err));
+        .catch(err => alert(`StartComponent: cannot route to game: ${err}`));
     }
   }
 }
