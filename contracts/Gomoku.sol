@@ -16,7 +16,7 @@ contract Gomoku {
     int8 lastPlayer;  // who played last move
     uint lastBlockstamp;
 
-    int8 drawProposal;
+    int8 drawProposal = -1;
     uint[2] balance;
 
     uint32 patience = 1000;
@@ -148,7 +148,7 @@ contract Gomoku {
         bytes32 hash = keccak256(abi.encode("draw", lastMove));
         require(ecrecover(hash, _sign.v, _sign.r, _sign.s) == playerAdd[uint8(_player)]);
         // set draw proposal or accept opponent's one
-        if (drawProposal == 0)
+        if (drawProposal == -1)
             drawProposal = _player;
         else if (drawProposal == 1-_player)
             pay(2);
@@ -170,7 +170,7 @@ contract Gomoku {
         moveCorrect(_move.code, playerID[msg.sender])
     {
         // drawProposal is valid only till next move
-        drawProposal = 0;
+        drawProposal = -1;
         // set this move as last (for opponent to apptoval)
         lastMove = _move;
         lastPlayer = (1 + int8(_move.mvIdx) + firstPlayer) % 2;
