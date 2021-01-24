@@ -8,14 +8,14 @@
     </mat-error>
   </mat-form-field>
   <br/>
-  <mat-form-field>
-    <mat-label>Game address:</mat-label>
-    <input matInput placeholder="Game address" type="text" name="gameAddress" formControlName="gameAddress" required>
-    <mat-error *ngFor="let validation of validationMessages.gameAddress">
-      <mat-error
-        *ngIf="form.get('gameAddress').hasError(validation.type) && (form.get('gameAddress').dirty || form.get('gameAddress').touched)">{{validation.message}}</mat-error>
-    </mat-error>
-  </mat-form-field>
+  <!--  <mat-form-field>-->
+  <!--    <mat-label>Game address:</mat-label>-->
+  <!--    <input matInput placeholder="Game address" type="text" name="gameAddress" formControlName="gameAddress" required>-->
+  <!--    <mat-error *ngFor="let validation of validationMessages.gameAddress">-->
+  <!--      <mat-error-->
+  <!--        *ngIf="form.get('gameAddress').hasError(validation.type) && (form.get('gameAddress').dirty || form.get('gameAddress').touched)">{{validation.message}}</mat-error>-->
+  <!--    </mat-error>-->
+  <!--  </mat-form-field>-->
   <br/>
   <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid">Join game</button>
 </form>

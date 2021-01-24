@@ -1,27 +1,61 @@
-<div class="control-container">
-  <br/>
-  User name: {{this.gameService.playerName}}
-  <br/>
-  Game address: {{this.gameService.gameAddress}}
-  <br/>
-  <br/>
-  <input matInput type="number" placeholder="Amount" name="Amount">
-  <br/>
-  <button mat-raised-button color="primary" type="submit">Bid</button>
-</div>
-
-<div class="game-container">
-  <div class="board" *ngIf="fieldStates">
-    <div *ngFor="let row of fieldStates; let i = index" class="board-row">
-      <div *ngFor="let field of row; let j = index" class="game-field">
-        <div *ngIf="field == 0" class="game-field-free" (click)="setColour(i, j)"></div>
-        <div *ngIf="field == 1" class="game-field-white"></div>
-        <div *ngIf="field == 2" class="game-field-black"></div>
-      </div>
+<ng-container *ngIf="gameService.gameInit && gameService.loaded">
+  <div class="control-container">
+    <div>
+      <br/>
+      User name: {{gameService.playerName}}
+      <br/>
+      Game address: {{gameService.gameAddress}}
+    </div>
+    <br/>
+    <br/>
+    <div>
+      <button mat-raised-button color="primary" type="button" (click)="sendMovesToChain()">Send moves to chain</button>
+    </div>
+    <br/>
+    <div>
+      <form [formGroup]="form" (ngSubmit)="bid()">
+        <mat-form-field>
+          <mat-label>Bid amount:</mat-label>
+          <input matInput placeholder="Bid amount" name="bidAmount" type="number" formControlName="bidAmount" required>
+        </mat-form-field>
+      </form>
+      <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid && !gameService.bidPropose">Bid
+      </button>
     </div>
   </div>
-  <br/>
-  <button mat-raised-button color="primary" type="submit" (click)="sendMove()">Send move</button>
-  <button mat-raised-button color="primary" type="submit">Propose draw</button>
-</div>
 
+  <div class="game-container">
+    <b *ngIf="gameService.turn">Your turn!</b>
+    <div class="board" *ngIf="gameService.fieldStates">
+      <div *ngFor="let row of gameService.fieldStates; let i = index" class="board-row">
+        <div *ngFor="let field of row; let j = index" class="game-field">
+          <div *ngIf="field == 0" class="game-field-free" (click)="setColour(i, j)"></div>
+          <div *ngIf="field == 1" class="game-field-white"></div>
+          <div *ngIf="field == 2" class="game-field-black"></div>
+        </div>
+      </div>
+    </div>
+    <br/>
+    <button mat-raised-button style="margin-right: 10px" color="primary" type="button"
+            [disabled]="!gameService.turn || gameService.currentMove == undefined" (click)="sendMove()">Send move
+    </button>
+    <button mat-raised-button color="primary" type="button" [disabled]="!gameService.canProposeDraw"
+            (click)="proposeDraw()">Propose draw
+    </button>
+  </div>
+</ng-container>
+
+<ng-container *ngIf="!gameService.gameInit">
+  Not connected to any game.
+</ng-container>
+
+<ng-container *ngIf="gameService.gameInit && !gameService.loaded">
+  <div>
+    <p>Wait until second player join.</p>
+    <mat-spinner></mat-spinner>
+  </div>
+</ng-container>
+
+<ng-container *ngIf="gameService.finished">
+  <p>Game has finished.</p>
+</ng-container>

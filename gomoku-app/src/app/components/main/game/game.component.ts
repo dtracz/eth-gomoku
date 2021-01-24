@@ -1,7 +1,6 @@
 import {Component, OnInit} from '@angular/core';
-import {FieldState, GameEthereumService} from "../../../services/game.ethereum.service";
-
-const GOMOKU_SIZE = 19;
+import {GameService} from '../../../services/game.service';
+import {FormBuilder, FormControl, FormGroup, Validators} from '@angular/forms';
 
 @Component({
   selector: 'app-game',
@@ -10,33 +9,40 @@ const GOMOKU_SIZE = 19;
 })
 export class GameComponent implements OnInit {
 
-  readonly fieldStates: FieldState[][];
-  // move as typescript tuple [x,y]
-  private currentMove: [number, number];
+  bidAmount: number;
+  form: FormGroup;
 
-  constructor(public gameService: GameEthereumService) {
-    this.fieldStates = new Array(GOMOKU_SIZE);
-    for (let i = 0; i < GOMOKU_SIZE; i++) {
-      this.fieldStates[i] = new Array(GOMOKU_SIZE).fill(0);
-    }
+  constructor(private fb: FormBuilder,
+              public gameService: GameService) {
   }
 
   ngOnInit(): void {
+    this.createForms();
   }
 
-  setColour(i, j) {
-    // revert previous move if exists
-    if (!!this.currentMove)
-      this.fieldStates[this.currentMove[0]][this.currentMove[1]] = FieldState.Free;
-    this.fieldStates[i][j] = this.gameService.playerColour;
-    // todo: remove in final version
-    console.log(`Index[${i}][${j}] update`)
-    console.log(this.fieldStates);
-    this.currentMove = [i, j];
+  private createForms(): void {
+    this.form = this.fb.group({
+      bidAmount: new FormControl(this.bidAmount, Validators.compose([Validators.required]))
+    });
   }
 
-  sendMove() {
-    // send move with the service, I'm not sure if we should store moveIndex here or in service, if here we could possibly show it in html component
-    this.gameService.sendMove(this.currentMove);
+  setColour(i: number, j: number): void {
+    this.gameService.setColour(i, j);
+  }
+
+  sendMove(): void {
+    this.gameService.sendMove();
+  }
+
+  proposeDraw(): void {
+    this.gameService.proposeDraw();
+  }
+
+  sendMovesToChain(): void {
+    this.gameService.sendMovesToChain();
+  }
+
+  bid(): void {
+    this.gameService.bid(this.form.value.bidAmount);
   }
 }

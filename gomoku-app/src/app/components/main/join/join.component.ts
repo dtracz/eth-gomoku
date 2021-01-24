@@ -1,8 +1,9 @@
 import {Component, OnInit} from '@angular/core';
-import {JoinService} from "../../../services/join.service";
-import {FormBuilder, FormControl, FormGroup, Validators} from "@angular/forms";
-import {Router} from "@angular/router";
-import {FieldState, GameEthereumService} from "../../../services/game.ethereum.service";
+import {JoinService} from '../../../services/join.service';
+import {FormBuilder, FormControl, FormGroup, Validators} from '@angular/forms';
+import {Router} from '@angular/router';
+import {FieldColour} from '../../../utils/field-colour';
+import {GameService} from '../../../services/game.service';
 
 @Component({
   selector: 'app-join',
@@ -16,39 +17,45 @@ export class JoinComponent implements OnInit {
   form: FormGroup;
   validationMessages = {
     playerName: [
-      {type: 'required', message: "Player name is required."},
-      {type: 'minLength', message: "Player name cannot be empty."}
-    ],
-    gameAddress: [{type: 'required', message: "Game address is required."}]
+      {type: 'required', message: 'Player name is required.'},
+      {type: 'minLength', message: 'Player name cannot be empty.'}
+    ]
   };
 
-  constructor(private fb: FormBuilder, private joinService: JoinService, private gameEthereumService: GameEthereumService, private router: Router) {
+  constructor(private fb: FormBuilder,
+              private joinService: JoinService,
+              private gameService: GameService,
+              private router: Router) {
   }
 
   ngOnInit(): void {
     this.createForms();
   }
 
-  private createForms() {
+  private createForms(): void {
     this.form = this.fb.group({
-      playerName: new FormControl(this.playerName, Validators.compose([Validators.required, Validators.minLength(1)])),
-      gameAddress: new FormControl(this.gameAddress, Validators.compose([Validators.required]))
+      playerName: new FormControl(this.playerName, Validators.compose([Validators.required, Validators.minLength(1)]))
     });
   }
 
-  submitForm() {
+  submitForm(): void {
     if (this.form.invalid) {
-      alert("INVALID FORM");
+      alert('Invalid form');
     } else {
       const playerName = this.form.value.playerName;
       this.joinService.joinGame(playerName).then(status => {
-        this.gameEthereumService.gameAddress = status['logs'][0]['address'];
-        //TODO now unblock board for first player
-    });
-      this.gameEthereumService.playerColour = FieldState.Black;
-      this.gameEthereumService.playerName = playerName;
-      //this.gameEthereumService.gameAddress = gameAddress;
+        this.gameService.gameAddress = status.receipt.to;
+      }).catch(err => alert(err));
+
+      this.gameService.playerColour = FieldColour.Black;
+      this.gameService.playerName = playerName;
+      this.gameService.moveIdx = 2;
+      this.gameService.turn = false;
+      this.gameService.gameInit = true;
+      this.gameService.sendLoaded();
+
       this.router.navigate(['/game'])
+        .catch(err => alert(err));
     }
   }
 }
