@@ -207,12 +207,13 @@ contract Gomoku {
                 break;
             }
         }
-        // if last move is to be replaced
-        if (_moves[_idx].mvIdx == lastMove.mvIdx
-         && keccak256(abi.encode(_moves[_idx])) != keccak256(abi.encode(lastMove))) {
-            // requre longer move chain
-            require(_nMoves > _idx + 1);
-            replaceLast(_moves[_idx], _signs[_idx], _moves[_idx+1], _signs[_idx+1]);
+        if (_moves[_idx].mvIdx == lastMove.mvIdx) {
+           // if last move is to be replaced
+            if (keccak256(abi.encode(_moves[_idx])) != keccak256(abi.encode(lastMove))) {
+                // requre longer move chain
+                require(_nMoves > _idx + 1);
+                replaceLast(_moves[_idx], _signs[_idx], _moves[_idx+1], _signs[_idx+1]);
+            }
             _idx++;
         }
         while (_idx < _nMoves) {
