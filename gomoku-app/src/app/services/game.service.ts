@@ -126,16 +126,20 @@ export class GameService {
   sendMove(): void {
     this.turn = !this.turn;
     this.fieldStates[this.currentMove[0]][this.currentMove[1]] = this.playerColour;
+
+    const moveStruct: Move = {
+      gameAddress: this.gameAddress,
+      mvIdx: this.moveIdx,
+      code: `(${this.currentMove[0]},${this.currentMove[1]})`,
+      hashPrev: this.hashPrev,
+      hashGameState: this.hashGameState
+    };
+
+    this.moves.push(moveStruct);
     this.channel.postMessage({
       type: MessageType.MOVE,
       move: this.currentMove,
-      moveStruct: {
-        gameAddress: this.gameAddress,
-        mvIdx: this.moveIdx,
-        code: `(${this.currentMove[0]},${this.currentMove[1]})`,
-        hashPrev: this.hashPrev,
-        hashGameState: this.hashGameState
-      },
+      moveStruct,
       playerColour: this.playerColour,
     });
     this.currentMove = undefined;
@@ -145,7 +149,7 @@ export class GameService {
     this.channel.postMessage({
       type: MessageType.DRAW,
       move: undefined,
-      moveStruct: null,
+      moveStruct: undefined,
       playerColour: this.playerColour
     });
     this.canProposeDraw = false;
