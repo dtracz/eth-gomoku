@@ -70,9 +70,6 @@ export class GameEthereumService extends AbstractContractService {
       this.bidAmount = 0;
       gomokuContract.setProvider(this.web3);
       gomokuContract.deployed().then(instance => {
-        instance.GameFinished({}, () => {
-          this.finished = true;
-        });
         return instance.register(moves.length, moves, signatures, {
           from: this.account,
           value: currentBid

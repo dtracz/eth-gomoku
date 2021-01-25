@@ -1,6 +1,7 @@
 import {AbstractContractService} from './abstract.contract.service';
 import {Injectable} from '@angular/core';
 import {eventGameJoined, eventMovePlayed} from '../utils/events';
+import {GameService} from './game.service';
 
 declare let require: any;
 const contractPath = require('../../../../build/contracts/Gomoku.json');
@@ -11,7 +12,7 @@ const contract = require('@truffle/contract');
 })
 export class StartService extends AbstractContractService {
 
-  constructor() {
+  constructor(private gameService: GameService) {
     super();
   }
 
@@ -25,6 +26,9 @@ export class StartService extends AbstractContractService {
       gomokuContract.deployed().then(instance => {
         instance.GameJoined({}, eventGameJoined);
         instance.MovePlayed({}, eventMovePlayed);
+        instance.GameFinished({}, (err, data) => {
+          this.gameService.finished = true;
+        });
         return instance.initGame(playerName, {
           from: this.account
         });

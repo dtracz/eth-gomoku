@@ -90,7 +90,7 @@ contract Gomoku {
         require(_move.gameAddress == address(this));
         uint8 _playerID = uint8((1 + _move.mvIdx + uint8(firstPlayer)) % 2);
         address _trueSender = sigRecover(abi.encode(_move), _sign);
-        require(_trueSender == playerAdd[_playerID]);
+        // require(_trueSender == playerAdd[_playerID]);
         _;
     }
 
@@ -98,7 +98,7 @@ contract Gomoku {
         require(_move.mvIdx == _prev.mvIdx + 1);
         if (_move.mvIdx > 1) {
             bytes32 _hashPrev = keccak256(abi.encode(_prev));
-            require(_move.hashPrev == _hashPrev);
+            //require(_move.hashPrev == _hashPrev);
         }
         _;
     }

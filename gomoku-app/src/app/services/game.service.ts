@@ -191,7 +191,6 @@ export class GameService {
         alert(`GameService: sendMovesToChain error: ${err}`);
       });
     this.bidPropose = false;
-    this.finished = this.gameEthereumService.finished;
   }
 
   bid(bidAmount: number): void {
