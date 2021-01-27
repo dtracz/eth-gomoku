@@ -1,0 +1,168 @@
+\documentclass[a4paper, 12pt, onecolumn, one]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[MeX]{polski}
+\usepackage[polish]{babel} \let\lll\undefined
+\usepackage{indentfirst}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{dblfloatfix}    % To enable figures at the bottom of page
+%\usepackage[tmargin=2cm, bmargin=2cm, inner=2.0cm, outer=1.0cm]{geometry}
+\usepackage{nicefrac}
+\usepackage{bbold}  % identity matrix symbol \mathbb{1}
+\usepackage[all]{nowidow}
+\usepackage{fancyhdr}
+	\usepackage[superscript]{cite} %cytowania jako indeksy
+	\usepackage{amsmath} %łamanie równań
+\setlength{\columnsep}{0.55cm}
+
+%\pagestyle{fancy}
+%\fancyhead{}
+%\fancyhead[C]{\textbf{headtext}}
+
+\let\oldthebibliography=\thebibliography
+\let\endoldthebibliography=\endthebibliography
+\renewenvironment{thebibliography}[1]{%
+\begin{oldthebibliography}{#1}%
+\setlength{\parskip}{0ex}%       <--  ODSTĘP MIĘDZY POZYCJAMI
+\setlength{\itemsep}{0.5ex} }%
+{ \end{oldthebibliography} }
+
+% incert programming code
+\usepackage{listings}
+\usepackage{color}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
+
+%----------------------------------------------------------------------------------
+
+\title{\textbf{Deterministyczne gry hazardowe na etherum, na przykłądzie Gomoku}}
+\author{\textbf{Dawid Tracz, Gabriela Czarska, Szymon Żak}}
+\date{\today}
+
+\begin{document}
+
+%---renewcommand's-----------------------------------------------------------------
+
+\renewcommand{\figurename}{\textbf{\small{}Ilustracja}}
+\renewcommand{\tablename}{\textbf{\small{}Tabela}}
+\newcommand{\specialcell}[2][c]{%
+  \begin{tabular}[#1]{@{}c@{}}#2\end{tabular}}
+\newcommand{\rpm}{\raisebox{.2ex}{$\scriptstyle\pm$}} % plus-minus sign
+
+%---title--------------------------------------------------------------------------
+  \maketitle
+
+%---text---------------------------------------------------------------------------
+
+\section{Ogólna idea}
+	Celem projektu było stworzenie smart contractu na Etherum umożliwiającego grę w 2-osobowe gry deterministyczne na pieniądze (eter). Zaimplementowanym przykładem jest gra Gomoku na planszy 19x19, choć system został napisany tak aby umożliwić łatwe rozszerzenie go o dodatkowe backendy do innych gier, takich jak szachy albo go. W trakcie gry gracze naprzemiennie wykonują ruchy, być może podbijając po drodze stawkę, którą przeciwnik zawsze musi wyrównać celem kontynuacji rozgrywki, aż do momentu zwycięstwa jednego z graczy, lub remisu, w przypadku którego zakłady zwracane są do właścicieli.
+	
+	Projekt składa się z kontraktu głównego będącego interfacem i obsługującego funkcje związane weryfikacją ruchów, wypłacaniem nagród i ogólną obsługą całości, oraz kontraktu stanowiącego silnik samej gry.
+	
+\section{Specyfikacja Podstawowa}
+  \subsection{Interfejs}
+	
+	\begin{lstlisting}
+	contract Gomoku {
+		function initGame(string memory _player0Name)
+		function joinGame(string memory _player1Name)
+		function play(Move memory _move, Signature memory _sign)
+		function proposeDraw(int8 _player, Signature memory _sign)
+		function claimEther()
+	}
+	\end{lstlisting}
+	
+	Funkcja \textit{initGame} pozwala na zainicjalizowanie kontraktu i zarejestrowanie pierwszego gracza. Wywołując ją można też wpłacić na kontrakt początkową stawkę zakładu, którą przeciwnik będzie musiał wyrównać celem dołączenia. Do gry dołączyć można używając funkcji \textit{joinGame}, przyjmującej (podobnie jak poprzednia) pseudonim gracza. Nie jest on jednak istotny z mechanicznego punktu widzenia.
+	
+	Funkcja \textit{play} pozwala na przekazanie do kontraktu kolejnego ruchu. Jego specyfikacja musi być zgodna ze strukturą \textit{Move}. Ruch nie musi być wysłany przez gracza, który go wykonuje, ale musi być przez niego podpisany (struktura \textit{Signature}). Obie struktury są opisane poniżej.
+	
+	Funkcja \textit{proposeDraw} służy do zaproponowania remisu drugiemu graczowi. Będzie ona aktualna do wykonania kolejnego ruchu. Podobnie jak w przypadku wykonania ruchu nie musi być ona wysłana przez gracza proponującego remis, ale musi być przez niego podpisana.
+	
+	Ostatnia funkcja \textit{claimEther} służy do pobrania całości puli z kontraktu jeśli przeciwnik zbyt długo nie odpowiada. Jest to konieczne, aby przegrywający nie mógł szantażować zwycięscy blokując mu całą wygraną.
+	\\
+	
+	\begin{lstlisting}
+    struct Move {
+        address gameAddress;
+        uint32 mvIdx;
+        string code;
+        bytes32 hashPrev;
+        bytes32 hashGameState;
+    }
+    struct Signature {
+         uint8 v;
+         bytes32 r;
+         bytes32 s;
+    }
+	\end{lstlisting}
+	
+	Poprawna struktura \textit{Move} zawiera adres kontraktu, indeks posunięcia (numerowane od 1), kod wykonywanego ruchu, hash poprzedniego ruchu, oraz hash stanu gry, po jego wykonaniu. W przypadku gomoku kodem gry jest para liczb w zakresie $[0,19)$ dodawana jako \textit{string}:~$"(n_1,n_2)"$. Hash stanu gry w przypadku gomoku może pozostać pusty. Został dodany aby jeden interface mógł służyć wszystkim rodzajom gier. Jego wykorzystanie konieczne były by w szachach, gdzie trzecie powtórzenie takiego samego stanu gry oznacza remis.
+	
+	Structura \textit{Signature} jest rozdzielonym na części podpisem otrzymanym z funkcji bibliotecznej wg poniższego kodu:
+	
+	\begin{lstlisting}
+    var signature = web3.eth.sign(account, message).substr(2)
+    var r = '0x' + signature.slice(0, 64)
+    var s = '0x' + signature.slice(64, 128)
+    var v = '0x' + signature.slice(128, 130)
+    v = web3.toDecimal(v)
+    if(v != 27 || v != 28)
+        v += 27
+	\end{lstlisting}
+	
+  \subsection{Zastosowanie}
+	Z racji dużej prosty -- ruchy wykonywane naprzemiennie i podpisywane -- takie podejście do problemu jest stosunkowo bezpieczne. Konieczność dostarczenia do ruchu adresu gry powoduje, ze nie będzie się dało wykorzystać czyichś podpisanych ruchów z innej rozgrywki (w przeciwnym przypadku np. zwycięzca grając rewanż mógłby wrzucić ciąg ruchów z poprzedniej gry i wygrać drugi raz). Hash poprzedniego ruchu gwarantuje, że będą one wrzucane na blockchain po kolei, a wykonujący posunięcie musi znać poprawny stan gry (bo zna ostatnie posunięcie przeciwnika). Całość okazuję się jednak droga w obsłudze, ze względu na konieczność kontaktowania się z blockchainem przy każdym posunięciu. Problem ten został rozwiązany w poniższej sekcji.
+
+\section{Gra offchain}
+	Aby zapobiec konieczności wrzucania na blockchain każdego ruchu z osobna konieczna jest funkcja przyjmująca tablicę kolejnych ruchów i podpisów, które zostaną kolejno zaaplikowane do gry. Gracze mogą się wcześniej wymieniać prywatnie kolejnymi posunięciami, a na koniec tylko jeden z nich wrzuca je na blockchain (być może przed ukończeniem rozgrywki).
+	
+	W takim przypadku pojawiają się jednak problemy z bezpieczeństwem: co jeśli po przesłaniu sobie $n$ ruchów jeden z graczy stwierdzi, że w $n-k$-tym popełnił błąd i wrzuci na blockchain sekwencje \mbox{$(1,2,...,n-k-1,n-k')$}? Co gorsza -- co jeśli ruch $n-k'$ był wygrywający i został zablokowany w oryginalnej serii posunięć? Aby temu zaradzić konieczna jest akceptacja każdego ruchu przez obu graczy. Zatwierdzenie przez drugiego gracza odbywa się po prostu poprzez wykonanie kolejnego ruchu, który zawiera hash poprzedniego. Z tej przyczyny ostatni wrzucony ruch nie jest przesyłany do silnika gry i oczekuje na odpowiedź przeciwnika. Taka sytuacja oznacza jednak, że partia nigdy nie będzie mogła zostać uznana za wygraną, gdyż ostatni ruch nigdy nie będzie zaaplikowany. Powstaje zatem konieczność poddania partii po jej porażce, lub przesłania jakiegokolwiek (błędnego) ruchu, aby system wiedział, że przeciwnik widział i akceptuje porażkę. Oczywiście może tego nigdy nie zrobić, ale wówczas zwycięzca odbierze nagrodę za pomocą funkcji \textit{claimEther}.
+	
+	Teraz jeśli zdarzy się tak, że jakiś gracz wrzuci nieuczciwy ciąg ruchów \mbox{$(1,2,...,n-k-1,n-k')$}, jego przeciwnik będzie mógł odpowiedzieć wrzucając sekwencję \mbox{$(1,2,...,n)$}. Kontrakt wówczas rozpozna alternatywny ruch $n-k$ i zaaplikuje ten, który posiada następnika.
+	
+	Do wrzucania tablicy ruchów służy funkcja:
+	\begin{lstlisting}
+    function register(uint32 _nMoves,
+                        Move[] memory _moves,
+                        Signature[] memory _signs)
+	\end{lstlisting}
+ 	
+\section{Frontend}
+	Cześć frontendowa została napisana w Angularze. Kod został podzielony na osobne componenty i serwisy.
+
+\subsection{Start}
+Aby uruchomić grę nalezy zmigrowac kontrakt na blockchain `trufle migrate` a następnie w folderze app `ng serve`. Aplikacja bedzie dostępna na `http://localhost:4200/`
+
+\subsection{Inicjalizacja}
+Aby rozpocząć rozgrywkę nalezy przysisnac przycisk start game i podać nazwę użytkownika. Odpowiednia funkcja z kontraktu zostanie wywołana i rozgrywka zostanie zainicjalizowana.
+
+\subsection{Join}
+Aby dołączyć do rozgrywki drugi użytkownik (używający innego konta skonfigurowanego przez metamask) przysiska `join game` i podaje swoją nazwę. Wywołana jest odpowiednia funkcja z kontraktu, która sprawdza czy polaczenie tego użytkownika jest możliwe. Jeśli tak to użytkownik zostaje dołączony do rozgrywki i  emitowany jest event gameJoined, ktory następnie przechwytywany jest przez aplikacje. Wtedy gracz pierwszy moze wykonać pierwszy ruch.
+
+\subsection{Gra}
+Gracze naprzemiennie wykonują ruchy. Zgodnie z podpunktem 3 domyślnie nie są one wysyłane na blockchain tylko bezpośrednio do przeciwnika. Ruch oraz hash ruchu jest zapisywany tak aby umożliwić późniejsze wysłanie i weryfikacje ruchów poprzez kontrakt. W każdej chwili gracz może wysłać poprzednie ruchy w celu weryfikacji poprawności za pomocą przycisku `Send to blockchain`. 
+	
+%\begin{thebibliography}{99} \small
+%	\bibitem{mark} A.B.~Author; \textit{Article title} Volume, (year) \mbox{pages}
+%	
+%\end{thebibliography}
+\end{document}
