@@ -1,7 +1,7 @@
-export const eventGameJoined = (err, data) => {
-  console.log('Someone joined data:', data);
+export const eventGameJoined = (err, message) => {
+  console.log('Someone joined data:', message);
 };
 
-export const eventMovePlayed = (err, data) => {
-  console.log('Someone made a move:', data);
+export const eventMovePlayed = (err, message) => {
+  console.log('Someone made a move:', message);
 };

@@ -79,8 +79,8 @@ contract GomokuBackend {
         returns(bool)
     {
         MoveCode memory _code = decode(_str);
-        return (gameState.board[_code.x][_code.y] == 0
-            && winner < 0);
+        return (gameState.board[_code.x][_code.y] == 0);
+            // && winner < 0);
     }
 
     /**
@@ -131,10 +131,10 @@ contract GomokuBackend {
                 }
             }
         }
-        return _sameInDir[1][0] + _sameInDir[1][2] == 5  // horizontal
-            || _sameInDir[0][1] + _sameInDir[2][1] == 5  // vertical
-            || _sameInDir[0][0] + _sameInDir[2][2] == 5  // SW-NE diag
-            || _sameInDir[2][0] + _sameInDir[0][2] == 5; // NW-SE diag
+        return _sameInDir[1][0] + _sameInDir[1][2] == 4  // horizontal
+            || _sameInDir[0][1] + _sameInDir[2][1] == 4  // vertical
+            || _sameInDir[0][0] + _sameInDir[2][2] == 4  // SW-NE diag
+            || _sameInDir[2][0] + _sameInDir[0][2] == 4; // NW-SE diag
     }
 }
 

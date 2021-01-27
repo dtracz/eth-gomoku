@@ -17,6 +17,7 @@ export class GameService {
   private readonly channel: BroadcastChannel;
   private readonly moves: Move[];
   private readonly signatures: any[];
+  private readonly hashGameState = ZERO_32;
   readonly fieldStates: FieldColour[][];
   playerColour: FieldColour;
   playerName: string;
@@ -25,8 +26,7 @@ export class GameService {
   // game move state
   currentMove: [number, number];
   moveIdx: number;
-  hashPrev = ZERO_32;
-  hashGameState = ZERO_32;
+  private hashPrev = ZERO_32;
 
   // game state
   finished = false;
@@ -60,20 +60,14 @@ export class GameService {
           break;
         }
         case MessageType.DRAW: {
-          this.drawMessageHandler(message);
+          this.drawMessageHandler();
           break;
         }
         case MessageType.DRAW_AGREE: {
-          this.finished = true;
-          this.gameEthereumService.proposeDraw(this.playerColour, {
-            gameAddress: this.gameAddress,
-            mvIdx: this.moveIdx,
-            code: `(${this.currentMove[0]},${this.currentMove[1]})`,
-            hashPrev: this.hashPrev,
-            hashGameState: this.hashGameState
-          }).catch(err => {
-            alert(`Proposing draw failed: ${err}`);
-          });
+          this.gameEthereumService.proposeDraw(this.hashPrev, this.gameAddress)
+            .catch(err => {
+              alert(`Proposing draw failed: ${err}`);
+            });
           break;
         }
         case MessageType.DRAW_REJECT: {
@@ -100,18 +94,12 @@ export class GameService {
     }
   }
 
-  private drawMessageHandler(message: Message): void {
+  private drawMessageHandler(): void {
     if (confirm('Do you agree to draw?')) {
-      this.gameEthereumService.proposeDraw(this.playerColour, {
-        gameAddress: this.gameAddress,
-        mvIdx: this.moveIdx,
-        code: `(${this.currentMove[0]},${this.currentMove[1]})`,
-        hashPrev: this.hashPrev,
-        hashGameState: this.hashGameState
-      }).catch(err => {
-        alert(`proposing draw failed: ${err}`);
-      });
-      this.finished = true;
+      this.gameEthereumService.proposeDraw(this.hashPrev, this.gameAddress)
+        .catch(err => {
+          alert(`proposing draw failed: ${err}`);
+        });
       this.channel.postMessage({
         type: MessageType.DRAW_AGREE
       });
@@ -126,6 +114,10 @@ export class GameService {
     this.channel.postMessage({
       type: MessageType.WIN
     });
+  }
+
+  movesCount(): number {
+    return this.moves.length;
   }
 
   sendLoaded(): void {

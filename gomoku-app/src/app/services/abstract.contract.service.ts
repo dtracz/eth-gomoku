@@ -11,7 +11,7 @@ const Web3 = require('web3');
 export abstract class AbstractContractService {
 
   protected account: any = null;
-  protected readonly web3: any;
+  protected readonly web3Provider: any;
   protected enable: any;
 
   protected constructor() {
@@ -19,9 +19,9 @@ export abstract class AbstractContractService {
       alert('Non-Ethereum browser detected. Install MetaMask');
     } else {
       if (typeof window.web3 !== 'undefined') {
-        this.web3 = window.web3.currentProvider;
+        this.web3Provider = window.web3.currentProvider;
       } else {
-        this.web3 = new Web3.providers.HttpProvider('http://127.0.0.1:7545');
+        this.web3Provider = new Web3.providers.HttpProvider('http://127.0.0.1:7545');
       }
       window.web3 = new Web3(window.ethereum);
       this.enable = this.enableMetaMaskAccount();

@@ -22,11 +22,14 @@ export class StartService extends AbstractContractService {
 
     return new Promise((resolve, reject) => {
       const gomokuContract = contract(contractPath);
-      gomokuContract.setProvider(this.web3);
+      gomokuContract.setProvider(this.web3Provider);
       gomokuContract.deployed().then(instance => {
         instance.GameJoined({}, eventGameJoined);
         instance.MovePlayed({}, eventMovePlayed);
-        instance.GameFinished({}, (err, data) => {
+        instance.GameInitialized({}, (err, message) => {
+          this.gameService.gameInit = true;
+        });
+        instance.GameFinished({}, (err, message) => {
           this.gameService.finished = true;
         });
         return instance.initGame(playerName, {

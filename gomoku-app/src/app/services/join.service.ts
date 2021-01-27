@@ -22,10 +22,10 @@ export class JoinService extends AbstractContractService {
 
     return new Promise((resolve, reject) => {
       const gomokuContract = contract(contractPath);
-      gomokuContract.setProvider(this.web3);
+      gomokuContract.setProvider(this.web3Provider);
       gomokuContract.deployed().then(instance => {
         instance.MovePlayed({}, eventMovePlayed);
-        instance.GameFinished({}, (err, data) => {
+        instance.GameFinished({}, (err, message) => {
           this.gameService.finished = true;
         });
         return instance.joinGame(playerName, {

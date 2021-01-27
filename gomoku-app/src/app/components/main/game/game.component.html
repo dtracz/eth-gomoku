@@ -10,7 +10,7 @@
     <br/>
     <div>
       <button mat-raised-button color="primary" type="button" (click)="sendMovesToChain()"
-              [disabled]="!gameService.turn">Send moves to chain
+              [disabled]="!gameService.turn || gameService.movesCount() == 0">Send moves to chain
       </button>
     </div>
     <br/>
@@ -42,7 +42,7 @@
             [disabled]="!gameService.turn || gameService.currentMove == undefined" (click)="sendMove()">Send move
     </button>
     <button mat-raised-button color="primary" type="button"
-            [disabled]="!gameService.canProposeDraw && !gameService.turn"
+            [disabled]="!gameService.canProposeDraw || !gameService.turn || gameService.movesCount() <= 1"
             (click)="proposeDraw()">Propose draw
     </button>
   </div>

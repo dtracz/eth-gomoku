@@ -8,7 +8,7 @@ export interface Move {
 
 export const MoveType = {
   Move: {
-    gameAddress: 'string',
+    gameAddress: 'address',
     mvIdx: 'uint32',
     code: 'string',
     hashPrev: 'bytes32',

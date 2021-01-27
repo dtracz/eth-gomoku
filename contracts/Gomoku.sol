@@ -29,6 +29,12 @@ contract Gomoku {
         bytes32 hashGameState;
     }
 
+    struct Special {
+        address gameAddress;
+        bytes32 hashPrev;
+        string code;
+    }
+
     struct Signature {
          uint8 v;
          bytes32 r;
@@ -43,6 +49,7 @@ contract Gomoku {
                      int8 firstPlayer, uint coins);
     event MovePlayed(string move, int8 player);
     event GameFinished(int8 winnerID, string winnerName, uint reward);
+    event DrawProposal(string player, uint32 lastMove);
 
 
     function uint2bytes(uint16 i)
@@ -90,7 +97,7 @@ contract Gomoku {
         require(_move.gameAddress == address(this));
         uint8 _playerID = uint8((1 + _move.mvIdx + uint8(firstPlayer)) % 2);
         address _trueSender = sigRecover(abi.encode(_move), _sign);
-        // require(_trueSender == playerAdd[_playerID]);
+        require(_trueSender == playerAdd[_playerID]);
         _;
     }
 
@@ -98,7 +105,7 @@ contract Gomoku {
         require(_move.mvIdx == _prev.mvIdx + 1);
         if (_move.mvIdx > 1) {
             bytes32 _hashPrev = keccak256(abi.encode(_prev));
-            //require(_move.hashPrev == _hashPrev);
+            require(_move.hashPrev == _hashPrev);
         }
         _;
     }
@@ -142,19 +149,25 @@ contract Gomoku {
 
     /**
      * Propose draw. Proposal is valid till any other move is played and cannot be withdrawn.
-     * int8 _player: ID of proposing player (will be verified).
+     * Special _proposal: special struct for coding and signing valid special actions.
      * bytes32 _signature: signature of the player.
      */
-    function proposeDraw(int8 _player, Signature memory _sign)
+    function proposeDraw(Special memory _proposal, Signature memory _sign)
         public
         payable
     {
-        address _proposerAdd = sigRecover(abi.encode("draw", lastMove), _sign);
-        require(_proposerAdd == playerAdd[uint8(_player)]);
-        // set draw proposal or accept opponent's one
+        address _trueSender = sigRecover(abi.encode(_proposal), _sign);
+        require(_trueSender == playerAdd[0] || _trueSender == playerAdd[1]);
+        int8 _playerID = playerID[_trueSender];
+
+        require(_proposal.gameAddress == address(this));
+        require(_proposal.hashPrev == keccak256(abi.encode(lastMove)));
+        require(keccak256(bytes(_proposal.code)) == keccak256(bytes("draw")));
+
+        emit DrawProposal(playerName[uint8(_playerID)], lastMove.mvIdx);
         if (drawProposal == -1)
-            drawProposal = _player;
-        else if (drawProposal == 1-_player)
+            drawProposal = _playerID;
+        else if (drawProposal == 1-_playerID)
             pay(2);
     }
 
@@ -168,7 +181,7 @@ contract Gomoku {
         payable
         verifySignature(_move, _sign)
         verifyOrder(lastMove, _move)
-        surrenderHandler(_move.code, playerID[msg.sender])
+        surrenderHandler(_move.code, int8(1 + _move.mvIdx + uint8(firstPlayer)) % 2)
         stakeVerifier()
     {
         approveLast();
@@ -254,6 +267,8 @@ contract Gomoku {
             emit GameFinished(_winner, playerName[uint8(_winner)], balance[uint8(_winner)]);
         else
             emit GameFinished(_winner, "draw", 0);
+        // should be no eth on the constract at this point
+        selfdestruct(msg.sender);
     }
 
     /**

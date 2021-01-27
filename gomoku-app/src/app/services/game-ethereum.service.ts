@@ -1,6 +1,7 @@
 import {AbstractContractService} from './abstract.contract.service';
 import {Injectable} from '@angular/core';
 import {Move, MoveType} from '../utils/move';
+import {Draw, SpecialType} from '../utils/draw';
 import {SignService} from './sign.service';
 
 declare let require: any;
@@ -13,8 +14,6 @@ const contract = require('@truffle/contract');
 export class GameEthereumService extends AbstractContractService {
 
   finished = false;
-  gameAddress: string;
-  playerName: string;
   private bidAmount = 0;
 
   constructor(private signService: SignService) {
@@ -30,11 +29,11 @@ export class GameEthereumService extends AbstractContractService {
     });
   }
 
-  sendToBlockchain(move: any, signature: string, account: string): Promise<any> {
+  sendToBlockchain(move: any, signature: { v: string, r: string, s: string }, account: string): Promise<any> {
     console.log('Sending move to blockchain move:', move, ' signature:', signature, ' account:', account);
     return new Promise((resolve, reject) => {
       const gomokuContract = contract(contractPath);
-      gomokuContract.setProvider(this.web3);
+      gomokuContract.setProvider(this.web3Provider);
       gomokuContract.deployed().then(instance => {
         instance.play(move, signature, {
           from: account
@@ -68,7 +67,7 @@ export class GameEthereumService extends AbstractContractService {
       const gomokuContract = contract(contractPath);
       const currentBid = this.bidAmount;
       this.bidAmount = 0;
-      gomokuContract.setProvider(this.web3);
+      gomokuContract.setProvider(this.web3Provider);
       gomokuContract.deployed().then(instance => {
         return instance.register(moves.length, moves, signatures, {
           from: this.account,
@@ -85,17 +84,21 @@ export class GameEthereumService extends AbstractContractService {
     });
   }
 
-  async proposeDraw(id: number, move: Move): Promise<any> {
+  async proposeDraw(hashPrev: string, gameAddress: string): Promise<any> {
     this.getAccount()
       .catch(err => alert(`GameEthereumService: proposeDraw error: ${err}`));
-    const account = await this.getAccount();
-    const signature = await this.signService.sign(move, MoveType, account);
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
+      const draw: Draw = {
+        gameAddress,
+        hashPrev,
+        code: 'draw'
+      };
+      const signature = await this.signService.sign(draw, SpecialType, this.account);
       const gomokuContract = contract(contractPath);
-      gomokuContract.setProvider(this.web3);
+      gomokuContract.setProvider(this.web3Provider);
       gomokuContract.deployed().then(instance => {
-        return instance.proposeDraw(id, signature, {
+        return instance.proposeDraw(draw, signature, {
           from: this.account
         });
       }).then(status => {
